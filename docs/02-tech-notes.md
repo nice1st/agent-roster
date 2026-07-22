@@ -64,14 +64,16 @@
 [00 §3](00-vision.md)의 "초대된 계정만 로그인 통과"를 옵션 조합으로 지원:
 
 - 소셜 프로바이더별 `disableSignUp: true` = 신규 가입 하드 차단. `disableImplicitSignUp: true` = `requestSignUp` 명시 요청 시에만 생성. 세 OAuth 경로(빌트인 callback·generic OAuth·idToken)에 동일 로직(소스 확인).
-- admin 플러그인 `createUser`로 관리자가 email 지정해 사용자 생성. **password가 필수 인자** — Google 로그인 전용 사용자도 무작위 더미 비밀번호가 필요.
+- admin 플러그인 `createUser`로 관리자가 email 지정해 사용자 생성. password는 1.6.23 기준 선택 인자(실측 — 공식 문서의 필수 표기와 다름).
 - `accountLinking.trustedProviders: ["google"]` — 같은 email의 기존 user에 소셜 계정을 자동 연결. `disableImplicitLinking`으로 자동 연결을 끌 수 있음.
-- (추정) "관리자 생성 계정 + 첫 Google 로그인"이 가입 차단에 걸리지 않고 연결 경로로 통과하는지 — `disableSignUp`과 accountLinking의 상호작용은 실행으로 재확인 필요.
+- **기존 email user의 첫 소셜 로그인은 "가입"이 아니라 "연결"로 분류된다**(원문 — 1.6.23 dist 추적): `handleOAuthUserInfo`가 account 미존재 시 email로 user를 폴백 조회해 연결 분기를 먼저 타고, `disableSignUp` 차단은 user가 전혀 없을 때의 분기에서만 평가됨. 즉 사전 생성 계정은 가입 차단에 걸리지 않는다.
+- **연결 분기의 자체 게이트 함정**: `accountLinking.requireLocalEmailVerified`(기본 true)가 로컬 user의 `emailVerified=false`(스키마 기본값)를 거부 — 관리자 생성 계정은 **`emailVerified: true`로 만들어야** 첫 소셜 로그인이 통과한다(실행 — 생성 시 반영 확인).
 
 ## 3. Bun 런타임 스모크 (실행, Bun 1.3.11)
 
 - **`Bun.randomUUIDv7()` 동일 ms 단조성 위반 존재** — 100만 회 연속 생성 중 198회 역전. 교훈: uuidv7은 식별자로만 쓰고, 정렬·커서·이벤트 재생 기준은 **삽입 순서 정수(sqlite rowid 등)** 를 별도로 둔다.
 - `Bun.serve`의 `routes`(경로 파라미터 지원)가 우선 매칭되고, 미스는 `fetch` 콜백으로 폴백 — 신규 라우트와 레거시 라우팅의 공존 패턴으로 사용 가능.
+- `Bun.serve`의 `routes`에 HTML import를 직접 올려 React 포함 번들을 자동 서빙 가능(실행) — 번들은 `/_bun/client/*`로 제공되고 같은 서버의 API 라우트와 공존. `bun build <html> --outdir` 정적 산출 폴백도 동작.
 - **`Bun.serve` 응답 스트림은 소켓 backpressure를 유저스페이스에 전파하지 않음** — 읽지 않는 소켓에 2MB를 밀어도 큐가 다음 tick에 비워져 `desiredSize`가 HWM에 고정(push), pull 스트림은 소켓 포화에도 pull을 무한 호출(OOM), direct `write()`는 항상 전량 기록 보고. `desiredSize`가 정확한 건 **같은 tick 안의 동기 버스트**뿐. 교훈: 미전송 큐 상한은 동기 버스트 범위에서만 동작하며, 여러 tick에 걸친 느린 수신자의 backlog는 Bun 네이티브 버퍼에 숨어 관측 불가.
 
 ## 4. Google Chat API (추정 — 문서 기반, 1차 범위 밖·구현 전 실검증 필요)
