@@ -11,4 +11,12 @@ export interface ErrorEvent {
   error: string;
 }
 
-export type BrokerEvent = RegisteredEvent | ErrorEvent;
+export interface MessageEvent {
+  type: "message";
+  from: string;
+  sent_at: string; // 브로커가 릴레이 시점에 찍는 ISO8601
+  message: string;
+  skill?: string; // 발신 요청에 있을 때만 포함
+}
+
+export type BrokerEvent = RegisteredEvent | ErrorEvent | MessageEvent;
