@@ -6,7 +6,7 @@
 
 ## 상태
 
-**계획 단계 — 코드 없음.** 구현 순서는 [docs/05-plan.md](docs/05-plan.md).
+**구현 단계.** 구현 순서와 확정 결정은 [docs/05-plan.md](docs/05-plan.md).
 
 ## 문서
 
