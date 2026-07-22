@@ -6,8 +6,12 @@
 import type { Database } from "bun:sqlite";
 import { betterAuth } from "better-auth";
 import { getMigrations } from "better-auth/db/migration";
-import { admin } from "better-auth/plugins";
+import { admin, jwt } from "better-auth/plugins";
+import type { JSONWebKeySet } from "jose";
 import { brokerDbPathFrom } from "../store/db";
+
+// 토큰 만료 — 01 §3.1: 폐기·만료 없음, 유출 대응은 서명키 회전. 초장기 상수로 "사실상 없음"을 표현한다.
+const TOKEN_EXPIRATION = "3650d";
 
 export interface AuthUser {
   id: string;
@@ -49,6 +53,14 @@ export interface WebAuth {
   deleteUser(userId: string): Promise<boolean>;
   /** 전체 사용자 목록. */
   listUsers(): Promise<AuthUser[]>;
+  /** jwt 플러그인의 JWKS를 서버 내부 API로 얻는다(외부 네트워크 fetch 없음) — 브로커 검증기 부팅 시 1회 사용. */
+  getJwks(): Promise<JSONWebKeySet>;
+  /**
+   * 세션 없이 user id로 서명된 JWT를 만든다 — jwt 플러그인의 server-only signJWT를 감싼다.
+   * 실서버 흐름은 세션이 있는 /api/auth/token(getToken)이며, 이 메서드는 세션을 프로그램적으로
+   * 만들기 어려운 테스트에서 같은 서명 경로(같은 키·알고리즘)를 그대로 태우기 위한 것이다.
+   */
+  issueTokenForUser(userId: string): Promise<string>;
 }
 
 /** Better Auth 옵션 조립 — createWebAuth와 CLI migrate 설정(cli-config.ts)이 공유하는 단일 출처. */
@@ -70,7 +82,20 @@ export function buildAuthOptions(config: WebAuthConfig) {
     account: {
       accountLinking: { enabled: true, trustedProviders: ["google"] },
     },
-    plugins: [admin()],
+    plugins: [
+      admin(),
+      // 브로커 검증기와 호환 필수: ES256. 만료는 초장기(위 TOKEN_EXPIRATION) — 01 §3.1.
+      // sub 클레임은 기존 브로커 검증(sub만 읽음)과의 계약을 유지하기 위해 항상 user id로 고정한다.
+      jwt({
+        jwks: { keyPairConfig: { alg: "ES256" } },
+        jwt: {
+          expirationTime: TOKEN_EXPIRATION,
+          getSubject: (session) => session.user.id,
+          // 클레임 최소화 — 브로커는 sub만 읽으므로 user 객체 전체(email 등)를 담지 않는다.
+          definePayload: () => ({}),
+        },
+      }),
+    ],
   };
 }
 
@@ -136,6 +161,15 @@ export function createWebAuth(config: WebAuthConfig): WebAuth {
       const ctx = await auth.$context;
       const users = await ctx.internalAdapter.listUsers();
       return users.map(toAuthUser);
+    },
+
+    async getJwks() {
+      return (await auth.api.getJwks()) as JSONWebKeySet;
+    },
+
+    async issueTokenForUser(userId) {
+      const { token } = await auth.api.signJWT({ body: { payload: { sub: userId } } });
+      return token;
     },
   };
 }

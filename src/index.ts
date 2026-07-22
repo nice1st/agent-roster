@@ -1,23 +1,13 @@
-import { existsSync } from "node:fs";
-import type { JWK } from "jose";
 import webIndex from "../web/index.html";
 import { createAdminApiRoutes } from "./api/admin";
-import { importPublicJwk } from "./auth/keys";
-import { createJwtVerifier } from "./auth/token";
+import { createJwksVerifierFromWebAuth } from "./auth/jwks-verifier";
 import { type AuthEnv, authEnvFrom, createWebAuth } from "./auth/web-auth";
 import { hygieneFromEnv } from "./broker/hygiene";
 import { startServer } from "./server";
 import { openBrokerDatabase } from "./store/db";
 import { runDomainMigrations } from "./store/migrations";
 
-// 개발용 공개키 — #6에서 Better Auth JWKS로 교체된다
-const PUBLIC_KEY_PATH = ".dev/es256.public.jwk.json";
-
 if (import.meta.main) {
-  if (!existsSync(PUBLIC_KEY_PATH)) {
-    console.error(`공개키가 없다: ${PUBLIC_KEY_PATH} — 먼저 \`bun scripts/dev-token.ts <userId>\`로 키를 만들 것`);
-    process.exit(1);
-  }
   let authEnv: AuthEnv;
   try {
     authEnv = authEnvFrom(process.env);
@@ -25,8 +15,6 @@ if (import.meta.main) {
     console.error(e instanceof Error ? e.message : String(e));
     process.exit(1);
   }
-  const jwk = (await Bun.file(PUBLIC_KEY_PATH).json()) as JWK;
-  const verifier = createJwtVerifier(await importPublicJwk(jwk));
   const db = openBrokerDatabase(authEnv.dbPath);
   runDomainMigrations(db);
   const webAuth = createWebAuth({
@@ -34,6 +22,8 @@ if (import.meta.main) {
     secret: authEnv.secret,
     google: { clientId: authEnv.googleClientId, clientSecret: authEnv.googleClientSecret },
   });
+  // 브로커 검증기의 키 출처 = 같은 프로세스의 Better Auth JWKS(부팅 시 1회 로드) — 키 회전은 재기동 전제(01 §3.1).
+  const verifier = await createJwksVerifierFromWebAuth(webAuth);
   const { server } = startServer({
     port: 3000,
     verifier,

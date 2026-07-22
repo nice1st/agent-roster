@@ -1,7 +1,9 @@
 import { exportJWK, generateKeyPair, importJWK, type JWK, SignJWT } from "jose";
 
-// 개발·테스트용 ES256 키쌍과 토큰 발급 헬퍼.
-// 운영 발급은 #6에서 Better Auth로 간다 — 브로커는 발급하지 않고 검증만 한다.
+// 테스트 픽스처 — ES256 키쌍과 토큰 발급 헬퍼.
+// 운영 발급·검증은 #6에서 Better Auth(jwt 플러그인·JWKS)로 이전됐다(auth/web-auth.ts·auth/jwks-verifier.ts).
+// 이 모듈은 register.test.ts 등에서 "다른 키로 서명된 토큰은 거부된다" 같은 검증기 동작을
+// 실제 서버 없이 빠르게 확인하기 위한 테스트 전용 키·서명 헬퍼로 남는다.
 
 export interface Es256KeyPair {
   publicKey: CryptoKey;

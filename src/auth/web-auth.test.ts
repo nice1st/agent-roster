@@ -37,6 +37,11 @@ test("세션 없는 요청의 세션 조회는 비어 있다", async () => {
   expect(await res.json()).toBeNull();
 });
 
+test("세션 없는 토큰 엔드포인트 요청은 거부된다", async () => {
+  const res = await fetch(new URL("/api/auth/token", started.server.url));
+  expect(res.status).toBeGreaterThanOrEqual(400);
+});
+
 test("bootstrap-admin이 admin role 사용자를 만든다", async () => {
   const { webAuth } = await createMigratedWebAuth();
   const result = await webAuth.ensureAdminUser("admin@example.com");
