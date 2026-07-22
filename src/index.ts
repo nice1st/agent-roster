@@ -1,12 +1,14 @@
 import { existsSync } from "node:fs";
 import type { JWK } from "jose";
 import webIndex from "../web/index.html";
+import { createAdminApiRoutes } from "./api/admin";
 import { importPublicJwk } from "./auth/keys";
 import { createJwtVerifier } from "./auth/token";
 import { type AuthEnv, authEnvFrom, createWebAuth } from "./auth/web-auth";
 import { hygieneFromEnv } from "./broker/hygiene";
 import { startServer } from "./server";
 import { openBrokerDatabase } from "./store/db";
+import { runDomainMigrations } from "./store/migrations";
 
 // 개발용 공개키 — #6에서 Better Auth JWKS로 교체된다
 const PUBLIC_KEY_PATH = ".dev/es256.public.jwk.json";
@@ -25,8 +27,10 @@ if (import.meta.main) {
   }
   const jwk = (await Bun.file(PUBLIC_KEY_PATH).json()) as JWK;
   const verifier = createJwtVerifier(await importPublicJwk(jwk));
+  const db = openBrokerDatabase(authEnv.dbPath);
+  runDomainMigrations(db);
   const webAuth = createWebAuth({
-    db: openBrokerDatabase(authEnv.dbPath),
+    db,
     secret: authEnv.secret,
     google: { clientId: authEnv.googleClientId, clientSecret: authEnv.googleClientSecret },
   });
@@ -36,6 +40,7 @@ if (import.meta.main) {
     hygiene: hygieneFromEnv(process.env),
     webAuth,
     webRoutes: { "/": webIndex },
+    adminRoutes: createAdminApiRoutes({ webAuth, db }),
   });
   console.log(`agent-orchestra listening on ${server.url}`);
 }

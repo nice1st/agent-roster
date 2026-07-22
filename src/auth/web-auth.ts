@@ -41,6 +41,14 @@ export interface WebAuth {
   runMigrations(): Promise<void>;
   /** email의 admin role 사용자를 보장한다 — 이미 있으면 created:false로 기존 사용자를 돌려준다. */
   ensureAdminUser(email: string): Promise<EnsureAdminResult>;
+  /** 요청 헤더에서 세션을 해석한다 — 세션 없으면 null(관리자 API #7의 인가 판정 근거). */
+  getSessionUser(headers: Headers): Promise<AuthUser | null>;
+  /** 일반 사용자(role: user)를 만든다 — emailVerified: true로 생성해 첫 소셜 로그인 연결 게이트를 통과시킨다. */
+  createUser(email: string): Promise<AuthUser>;
+  /** userId의 사용자를 삭제한다 — 존재하지 않으면 false. */
+  deleteUser(userId: string): Promise<boolean>;
+  /** 전체 사용자 목록. */
+  listUsers(): Promise<AuthUser[]>;
 }
 
 /** Better Auth 옵션 조립 — createWebAuth와 CLI migrate 설정(cli-config.ts)이 공유하는 단일 출처. */
@@ -98,6 +106,36 @@ export function createWebAuth(config: WebAuthConfig): WebAuth {
         },
       });
       return { created: true, user: toAuthUser(user) };
+    },
+
+    async getSessionUser(headers) {
+      const session = await auth.api.getSession({ headers });
+      return session === null ? null : toAuthUser(session.user);
+    },
+
+    async createUser(email) {
+      const ctx = await auth.$context;
+      const user = await ctx.internalAdapter.createUser({
+        email,
+        name: email,
+        role: "user",
+        emailVerified: true,
+      });
+      return toAuthUser(user);
+    },
+
+    async deleteUser(userId) {
+      const ctx = await auth.$context;
+      const existing = await ctx.internalAdapter.findUserById(userId);
+      if (existing === null) return false;
+      await ctx.internalAdapter.deleteUser(userId);
+      return true;
+    },
+
+    async listUsers() {
+      const ctx = await auth.$context;
+      const users = await ctx.internalAdapter.listUsers();
+      return users.map(toAuthUser);
     },
   };
 }

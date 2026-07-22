@@ -15,10 +15,12 @@ export interface ServerConfig {
   webAuth?: WebAuth;
   /** 웹 UI 라우트(HTML import) — 예: { "/": index }. */
   webRoutes?: Record<string, HTMLBundle>;
+  /** 관리자 API 라우트(src/api/admin.ts가 조합해 export) — 없으면 마운트하지 않는다. */
+  adminRoutes?: Record<string, Partial<Record<"GET" | "POST" | "DELETE", RouteHandler>>>;
 }
 
 type RouteHandler = (req: Request) => Response | Promise<Response>;
-type RouteValue = HTMLBundle | RouteHandler | { POST: RouteHandler };
+type RouteValue = HTMLBundle | RouteHandler | Partial<Record<"GET" | "POST" | "DELETE", RouteHandler>>;
 
 export function startServer(config: ServerConfig) {
   const hygiene = resolveHygiene(config.hygiene);
@@ -32,6 +34,7 @@ export function startServer(config: ServerConfig) {
     "/register": { POST: register },
     "/send": { POST: send },
     ...config.webRoutes,
+    ...config.adminRoutes,
   };
   const webAuth = config.webAuth;
   if (webAuth !== undefined) {
