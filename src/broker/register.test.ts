@@ -17,13 +17,17 @@ afterAll(() => {
   started.server.stop(true);
 });
 
-function register(token: string, body: object = {}, signal?: AbortSignal): Promise<Response> {
-  return fetch(new URL("/register", started.server.url), {
+function registerAt(baseUrl: string | URL, token: string, body: object = {}, signal?: AbortSignal): Promise<Response> {
+  return fetch(new URL("/register", baseUrl), {
     method: "POST",
     signal,
     headers: { authorization: `Bearer ${token}` },
     body: JSON.stringify(body),
   });
+}
+
+function register(token: string, body: object = {}, signal?: AbortSignal): Promise<Response> {
+  return registerAt(started.server.url, token, body, signal);
 }
 
 async function readFirstFrame(res: Response) {
@@ -80,6 +84,30 @@ test("레지스트리에 없는 uuid로 리쥼하면 그 uuid로 등재된다", 
   const wanted = crypto.randomUUID();
   const { frame } = await readFirstFrame(await register(await signToken(keys.privateKey, "u1"), { uuid: wanted }));
   expect(frame.uuid).toBe(wanted);
+});
+
+test("상한 도달 상태의 신규 register는 503 broker full을 받는다", async () => {
+  const capped = startServer({ port: 0, verifier: createJwtVerifier(keys.publicKey), hygiene: { maxConnections: 1 } });
+  try {
+    const token = await signToken(keys.privateKey, "u1");
+    await readFirstFrame(await registerAt(capped.server.url, token)); // 정원 1을 채운다
+    const res = await registerAt(capped.server.url, token);
+    expect({ status: res.status, body: await res.json() }).toEqual({ status: 503, body: { error: "broker full" } });
+  } finally {
+    capped.server.stop(true);
+  }
+});
+
+test("상한 도달 상태에서도 같은 uuid 리쥼은 성공한다", async () => {
+  const capped = startServer({ port: 0, verifier: createJwtVerifier(keys.publicKey), hygiene: { maxConnections: 1 } });
+  try {
+    const token = await signToken(keys.privateKey, "u1");
+    const first = await readFirstFrame(await registerAt(capped.server.url, token));
+    const resumed = await readFirstFrame(await registerAt(capped.server.url, token, { uuid: first.frame.uuid }));
+    expect(resumed.frame).toEqual({ type: "registered", uuid: first.frame.uuid as string });
+  } finally {
+    capped.server.stop(true);
+  }
 });
 
 test("연결을 끊으면 엔트리가 제거된다", async () => {

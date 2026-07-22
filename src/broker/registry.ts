@@ -21,9 +21,14 @@ export interface RegistryEntry {
   handle: ConnectionHandle;
 }
 
+export type RegisterResult = { ok: true; replaced: boolean } | { ok: false; reason: "owner-mismatch" | "broker-full" };
+
 // UUID → 엔트리. agent 정체성은 이 Map이 전부다(01 §3.1) — 수명 = 연결.
 export class Registry {
   private entries = new Map<string, RegistryEntry>();
+
+  /** maxEntries = 프로세스당 연결 수 상한(01 §4 위생 ③). 기본 무제한 — 상한은 서버 조립부가 주입한다. */
+  constructor(private readonly maxEntries: number = Number.POSITIVE_INFINITY) {}
 
   get(uuid: string): RegistryEntry | undefined {
     return this.entries.get(uuid);
@@ -33,11 +38,23 @@ export class Registry {
     return this.entries.size;
   }
 
-  /** 등재. 같은 UUID의 산 엔트리는 소유자가 같을 때만 연결을 교체한다 — 불일치가 유일한 거부 분기(01 §3.1). */
-  register(entry: RegistryEntry): { ok: true; replaced: boolean } | { ok: false } {
+  get isFull(): boolean {
+    return this.entries.size >= this.maxEntries;
+  }
+
+  values(): IterableIterator<RegistryEntry> {
+    return this.entries.values();
+  }
+
+  /**
+   * 등재. 같은 UUID의 산 엔트리는 소유자가 같을 때만 연결을 교체한다 — 불일치는 거부(01 §3.1).
+   * 교체는 총량 불변이므로 상한과 무관하고, 새 엔트리는 정원이 차 있으면 거부한다.
+   */
+  register(entry: RegistryEntry): RegisterResult {
     const existing = this.entries.get(entry.uuid);
+    if (existing === undefined && this.isFull) return { ok: false, reason: "broker-full" };
     if (existing !== undefined) {
-      if (existing.owner !== entry.owner) return { ok: false };
+      if (existing.owner !== entry.owner) return { ok: false, reason: "owner-mismatch" };
       existing.handle.close();
     }
     this.entries.set(entry.uuid, entry);

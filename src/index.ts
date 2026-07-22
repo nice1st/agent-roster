@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import type { JWK } from "jose";
 import { importPublicJwk } from "./auth/keys";
 import { createJwtVerifier } from "./auth/token";
+import { hygieneFromEnv } from "./broker/hygiene";
 import { startServer } from "./server";
 
 // 개발용 공개키 — #6에서 Better Auth JWKS로 교체된다
@@ -14,6 +15,6 @@ if (import.meta.main) {
   }
   const jwk = (await Bun.file(PUBLIC_KEY_PATH).json()) as JWK;
   const verifier = createJwtVerifier(await importPublicJwk(jwk));
-  const { server } = startServer({ port: 3000, verifier });
+  const { server } = startServer({ port: 3000, verifier, hygiene: hygieneFromEnv(process.env) });
   console.log(`agent-orchestra listening on ${server.url}`);
 }

@@ -72,6 +72,7 @@
 
 - **`Bun.randomUUIDv7()` 동일 ms 단조성 위반 존재** — 100만 회 연속 생성 중 198회 역전. 교훈: uuidv7은 식별자로만 쓰고, 정렬·커서·이벤트 재생 기준은 **삽입 순서 정수(sqlite rowid 등)** 를 별도로 둔다.
 - `Bun.serve`의 `routes`(경로 파라미터 지원)가 우선 매칭되고, 미스는 `fetch` 콜백으로 폴백 — 신규 라우트와 레거시 라우팅의 공존 패턴으로 사용 가능.
+- **`Bun.serve` 응답 스트림은 소켓 backpressure를 유저스페이스에 전파하지 않음** — 읽지 않는 소켓에 2MB를 밀어도 큐가 다음 tick에 비워져 `desiredSize`가 HWM에 고정(push), pull 스트림은 소켓 포화에도 pull을 무한 호출(OOM), direct `write()`는 항상 전량 기록 보고. `desiredSize`가 정확한 건 **같은 tick 안의 동기 버스트**뿐. 교훈: 미전송 큐 상한은 동기 버스트 범위에서만 동작하며, 여러 tick에 걸친 느린 수신자의 backlog는 Bun 네이티브 버퍼에 숨어 관측 불가.
 
 ## 4. Google Chat API (추정 — 문서 기반, 1차 범위 밖·구현 전 실검증 필요)
 

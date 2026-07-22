@@ -2,6 +2,7 @@
 .DS_Store
 node_modules/
 .dev/
+.claude/worktrees/
 *.db
 *.db-wal
 *.db-shm
