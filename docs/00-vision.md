@@ -103,6 +103,5 @@ flowchart LR
 
 ## 6. 지금 정하지 않은 것
 
-- **저장소 기술** — 영속 대상(user·group·user_group·room·room_participant·message)이 확정된 뒤 선택한다. 지금 고정하지 않는다.
 - **메신저 연동(Google Chat 등)** — 1차 범위 밖. 검증 사실만 [02 §4](02-tech-notes.md)에 둔다.
 - **다른 에이전트(OpenCode·Codex), 무인 상주 어댑터** — 1차는 사용자가 로컬에서 띄운 Claude Code. 구동 검증은 [02 §1](02-tech-notes.md).
