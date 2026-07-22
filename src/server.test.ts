@@ -1,7 +1,8 @@
 import { afterAll, expect, test } from "bun:test";
 import { startServer } from "./server";
 
-const server = startServer({ port: 0 });
+const denyAll = { verify: async () => null };
+const { server } = startServer({ port: 0, verifier: denyAll });
 
 afterAll(() => {
   server.stop(true);

@@ -13,5 +13,5 @@
     "noFallthroughCasesInSwitch": true,
     "verbatimModuleSyntax": true
   },
-  "include": ["src", "test-setup.ts"]
+  "include": ["src", "plugin", "scripts", "test-setup.ts"]
 }
