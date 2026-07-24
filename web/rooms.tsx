@@ -27,8 +27,8 @@ interface RoomListItem {
 
 export interface RoomsPageProps {
   onBack: () => void;
-  /** active room을 열어 대화 화면(#13)으로 넘긴다. */
-  onOpenRoom: (roomId: string, roomName: string) => void;
+  /** active room은 대화 화면(#13), ended room은 기록 조회 화면(#15)으로 넘긴다 — RoomPanel이 status로 분기한다. */
+  onOpenRoom: (roomId: string, roomName: string, status: "active" | "ended") => void;
 }
 
 async function getJson<T>(url: string): Promise<T> {
@@ -141,7 +141,7 @@ export function RoomsPage({ onBack, onOpenRoom }: RoomsPageProps) {
                   )}
                   {r.status === "active" && (
                     <>
-                      <button type="button" onClick={() => onOpenRoom(r.id, r.name)}>
+                      <button type="button" onClick={() => onOpenRoom(r.id, r.name, "active")}>
                         열기
                       </button>
                       <button type="button" onClick={() => endRoom(r.id)}>
@@ -150,7 +150,7 @@ export function RoomsPage({ onBack, onOpenRoom }: RoomsPageProps) {
                     </>
                   )}
                   {r.status === "ended" && (
-                    <button type="button" onClick={() => onOpenRoom(r.id, r.name)}>
+                    <button type="button" onClick={() => onOpenRoom(r.id, r.name, "ended")}>
                       기록 보기
                     </button>
                   )}

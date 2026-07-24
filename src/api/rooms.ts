@@ -1,5 +1,6 @@
-// 웹 room API — prefix /api/rooms(05 §2 #12·#13·#14). 전부 세션 필요(없으면 401). room 조작(participants·start·PATCH·end)은
-// created_by 본인만, 아니면 403. 참여자 배치 대상은 세션 user에게 보이는 에이전트만(agents.ts의 isVisibleToViewer 재사용).
+// 웹 room API — prefix /api/rooms(05 §2 #12·#13·#14·#15). 전부 세션 필요(없으면 401). room 조작(participants·start·
+// PATCH·end)과 기록 조회(messages)는 created_by 본인만, 아니면 403. 참여자 배치 대상은 세션 user에게 보이는
+// 에이전트만(agents.ts의 isVisibleToViewer 재사용). ended room도 기록 조회는 가능하다(01 §5 기록 보존).
 
 import type { WebAuth } from "../auth/web-auth";
 import type { Registry } from "../broker/registry";
@@ -19,6 +20,9 @@ export interface RoomsApiDeps {
 function jsonError(status: number, error: string): Response {
   return Response.json({ error }, { status });
 }
+
+// limit 상한 — 명시 안 하면 기본으로도 쓴다(과도한 단일 응답 방지).
+const MAX_MESSAGES_LIMIT = 200;
 
 type RouteHandler = (req: Request) => Response | Promise<Response>;
 
@@ -175,6 +179,42 @@ export function createRoomsApiRoutes(
             { id: room.id, name: room.name },
           );
           return Response.json({ room: rooms.get(roomId) });
+        });
+      }),
+    },
+
+    "/api/rooms/:id/messages": {
+      GET: requireSession(webAuth, async (req, userId) => {
+        const roomId = roomIdFromPath(req, 2);
+        return requireOwnedRoom(userId, roomId, async () => {
+          const url = new URL(req.url);
+          const afterParam = url.searchParams.get("after");
+          const limitParam = url.searchParams.get("limit");
+          const after = afterParam !== null && /^\d+$/.test(afterParam) ? Number(afterParam) : 0;
+          const limit =
+            limitParam !== null && /^\d+$/.test(limitParam)
+              ? Math.min(Number(limitParam), MAX_MESSAGES_LIMIT)
+              : MAX_MESSAGES_LIMIT;
+
+          const rows = rooms.listMessagesAfter(roomId, after, limit);
+          const messages = rows.map((m) => ({
+            id: m.id,
+            from: m.from_uuid,
+            from_label: m.from_label ?? undefined,
+            content: m.content,
+            sent_at: m.sent_at,
+          }));
+          const participants = rooms.listParticipants(roomId).map((p) => ({
+            agent_uuid: p.agent_uuid,
+            alias_snapshot: p.alias_snapshot,
+            persona: p.persona,
+          }));
+          return Response.json({
+            messages,
+            participants,
+            next_after: messages.length > 0 ? messages[messages.length - 1]?.id : after,
+            has_more: messages.length === limit,
+          });
         });
       }),
     },

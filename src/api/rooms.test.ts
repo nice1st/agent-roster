@@ -304,3 +304,83 @@ test("이미 ended인 room을 다시 폭파하면 400이다", async () => {
   const endRes = await api(`/api/rooms/${room.id}/end`, owner.cookie, jsonInit("POST", {}));
   expect(endRes.status).toBe(400);
 });
+
+function roomSend(body: unknown): Promise<Response> {
+  return fetch(new URL("/room-send", started.server.url), {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+
+/** owner 세션 + 참여자 한 명이 배치되고 active인 room을 만들어 돌려준다(room-send.test.ts와 동일 패턴). */
+async function setUpActiveRoomWithMessages(messageCount: number) {
+  const owner = await createSessionUser(db, `msg-owner-${crypto.randomUUID()}@example.com`);
+  const agentOwner = await createSessionUser(db, `msg-agent-${crypto.randomUUID()}@example.com`);
+  const g1 = groups.create(`g-${crypto.randomUUID()}`);
+  groups.grant(owner.id, g1.id);
+  groups.grant(agentOwner.id, g1.id);
+  const agent = await registerAgent(agentOwner.id, "msg-agent");
+
+  const createRes = await api("/api/rooms", owner.cookie, jsonInit("POST", { name: "기록방" }));
+  const { room } = (await createRes.json()) as { room: { id: string } };
+  await api(`/api/rooms/${room.id}/participants`, owner.cookie, jsonInit("POST", { agent_uuid: agent.uuid }));
+  await api(`/api/rooms/${room.id}/start`, owner.cookie, jsonInit("POST", {}));
+  await agent.nextFrame(); // room-start 소비
+
+  for (let i = 0; i < messageCount; i++) {
+    await roomSend({ from: agent.uuid, room: room.id, message: `발언${i}` });
+    await agent.nextFrame(); // room-message 소비(자기 발언도 자신에게 팬아웃됨)
+  }
+
+  return { owner, roomId: room.id, agent };
+}
+
+test("기록이 rowid 순으로 조회된다", async () => {
+  const { owner, roomId } = await setUpActiveRoomWithMessages(3);
+
+  const res = await api(`/api/rooms/${roomId}/messages`, owner.cookie);
+  expect(res.status).toBe(200);
+  const { messages } = (await res.json()) as { messages: { id: number; content: string }[] };
+  expect(messages.map((m) => m.content)).toEqual(["발언0", "발언1", "발언2"]);
+  expect(messages[0]?.id).toBeLessThan(messages[1] === undefined ? Number.POSITIVE_INFINITY : messages[1].id);
+});
+
+test("after 커서로 이어서 조회된다", async () => {
+  const { owner, roomId } = await setUpActiveRoomWithMessages(3);
+
+  const firstPage = await api(`/api/rooms/${roomId}/messages?limit=2`, owner.cookie);
+  const { messages: firstMessages } = (await firstPage.json()) as { messages: { id: number; content: string }[] };
+  expect(firstMessages.map((m) => m.content)).toEqual(["발언0", "발언1"]);
+
+  const cursor = firstMessages[firstMessages.length - 1]?.id;
+  const secondPage = await api(`/api/rooms/${roomId}/messages?after=${cursor}`, owner.cookie);
+  const { messages: secondMessages } = (await secondPage.json()) as { messages: { id: number; content: string }[] };
+  expect(secondMessages.map((m) => m.content)).toEqual(["발언2"]);
+});
+
+test("남의 room 기록은 403이다", async () => {
+  const { roomId } = await setUpActiveRoomWithMessages(1);
+  const intruder = await createSessionUser(db, "msg-intruder@example.com");
+
+  const res = await api(`/api/rooms/${roomId}/messages`, intruder.cookie);
+  expect(res.status).toBe(403);
+});
+
+test("ended room도 기록이 조회된다", async () => {
+  const { owner, roomId } = await setUpActiveRoomWithMessages(2);
+  await api(`/api/rooms/${roomId}/end`, owner.cookie, jsonInit("POST", {}));
+
+  const res = await api(`/api/rooms/${roomId}/messages`, owner.cookie);
+  expect(res.status).toBe(200);
+  const { messages } = (await res.json()) as { messages: { content: string }[] };
+  expect(messages.map((m) => m.content)).toEqual(["발언0", "발언1"]);
+});
+
+test("기록 조회 응답에 참여자 목록이 alias_snapshot과 함께 담긴다", async () => {
+  const { owner, roomId } = await setUpActiveRoomWithMessages(1);
+
+  const res = await api(`/api/rooms/${roomId}/messages`, owner.cookie);
+  const { participants } = (await res.json()) as { participants: { alias_snapshot: string | null }[] };
+  expect(participants).toEqual([expect.objectContaining({ alias_snapshot: "msg-agent" })]);
+});

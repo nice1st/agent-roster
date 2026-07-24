@@ -17,7 +17,7 @@ export function App() {
   const { data: session, isPending } = authClient.useSession();
   const [screen, setScreen] = useState<Screen>("home");
   const [chatTarget, setChatTarget] = useState<{ uuid: string; label: string } | null>(null);
-  const [roomTarget, setRoomTarget] = useState<{ id: string; name: string } | null>(null);
+  const [roomTarget, setRoomTarget] = useState<{ id: string; name: string; status: "active" | "ended" } | null>(null);
 
   if (isPending) {
     return <p>세션 확인 중…</p>;
@@ -40,7 +40,14 @@ export function App() {
   }
 
   if (roomTarget !== null) {
-    return <RoomPanel roomId={roomTarget.id} roomName={roomTarget.name} onClose={() => setRoomTarget(null)} />;
+    return (
+      <RoomPanel
+        roomId={roomTarget.id}
+        roomName={roomTarget.name}
+        initialStatus={roomTarget.status}
+        onClose={() => setRoomTarget(null)}
+      />
+    );
   }
 
   if (screen === "my-agent") {
@@ -52,7 +59,12 @@ export function App() {
   }
 
   if (screen === "rooms") {
-    return <RoomsPage onBack={() => setScreen("home")} onOpenRoom={(id, name) => setRoomTarget({ id, name })} />;
+    return (
+      <RoomsPage
+        onBack={() => setScreen("home")}
+        onOpenRoom={(id, name, status) => setRoomTarget({ id, name, status })}
+      />
+    );
   }
 
   return (
