@@ -28,8 +28,8 @@ erDiagram
 | group | 발견(가시성)의 격리 단위. user는 여러 그룹에 속할 수 있다. 관리자가 만들고 삭제한다(삭제 시 user_group도 함께) |
 | user_group | user ↔ group 관계(다대다를 잇는 레코드). 관리자가 추가·삭제한다 |
 | room | 여러 에이전트를 모아 토론시키는 대화 공간. UUID를 가지며 발언은 room UUID를 대상으로 보낸다(§5). 그룹을 가로지를 수 있다 |
-| room_participant | agent ↔ room 관계. 에이전트별 페르소나·산출물 지시(선택)를 가진다. agent가 영속하지 않으므로 UUID 값과 표시용 메타 스냅샷으로 참조한다 — 종료된 room을 나중에 조회할 때 발언자를 보여주는 근거 |
-| message | room 안에서 오간 발언. room에 기록된다(§5). 발신자·시각을 가진다 |
+| room_participant | agent ↔ room 관계. 에이전트별 페르소나·산출물 지시(선택)를 가진다. agent가 영속하지 않으므로 UUID 값과 별칭 스냅샷으로 참조한다(참여자 목록 표시용) |
+| message | room 안에서 오간 발언. room에 기록된다(§5). 발신자 UUID·발신자 표시명(발신 시점 스냅샷)·시각을 가진다 — 종료된 room 조회 시 발언자 표시는 이 스냅샷이 담당한다 |
 
 **영속 대상은 user·group·user_group·room·room_participant·message다.** agent는 도메인 엔티티지만 저장되지 않는다(§3.1). **agent_token도 엔티티가 아니다** — 토큰은 JWT로 user 정체성을 담아 서명되며, 검증만으로 user를 확인한다(DB 저장·폐기 없음, §3.1).
 
