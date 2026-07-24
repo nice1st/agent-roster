@@ -1,5 +1,5 @@
-// room 화면(03 §2 "room", 05 §2 #12) — 목록·생성, draft 상태의 참여자 배치·시작, active 상태로 진입 시
-// RoomPanel(#13에서 구현)로 넘긴다. 여기서는 draft 관리 화면까지만 다룬다.
+// room 화면(03 §2 "room", 05 §2 #12·#13) — 목록·생성, draft 상태의 참여자 배치·시작, active 상태로 진입 시
+// RoomPanel(room-panel.tsx)로 넘긴다. 여기서는 draft 관리 화면까지만 다룬다.
 import { useEffect, useState } from "react";
 
 interface AgentMeta {

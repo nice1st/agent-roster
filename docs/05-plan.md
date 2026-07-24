@@ -28,8 +28,8 @@
 | ✅ 9 | C | 메타 갱신 (set_summary 일반화) | O | O | | | | |
 | ✅ 10 | D 웹 | 에이전트 목록 (user 스코프 모니터) | O | | | O | O | O |
 | ✅ 11 | D | 웹 1:1 대화 (노출 없는 웹 세션 등재) | O | | | O | O | |
-| 12 | E room | room 생성·참여자 배치·시작 | O | | | O | O | O |
-| 13 | E | room 대화 (room UUID 발언 도구·팬아웃·기록·관전) | O | O | | O | O | O |
+| ✅ 12 | E room | room 생성·참여자 배치·시작 | O | | | O | O | O |
+| ✅ 13 | E | room 대화 (room UUID 발언 도구·팬아웃·기록·관전) | O | O | | O | O | O |
 | 14 | E | room 종료 (버튼·타이머·폭파) | O | | | O | O | O |
 | 15 | E | room 기록 조회 | | | | O | O | O |
 | — | 후속 | CC 플러그인 패키징 — plugin.json·marketplace 형식(계승 레포 패턴). 일반 `claude mcp add` 서버는 채널 알림이 주입되지 않아 개발 플래그가 필요함(스모크 실측) | | O | | | | |

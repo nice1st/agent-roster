@@ -21,3 +21,55 @@ test("message가 아닌 이벤트는 null을 돌려준다", () => {
 test("필수 필드가 빠진 message 이벤트는 null을 돌려준다", () => {
   expect(toChannelNotification({ type: "message", message: "hello" })).toBeNull();
 });
+
+test("room-start 이벤트는 room 소개와 자기 페르소나를 content에, room_id를 meta에 담는다", () => {
+  const event = {
+    type: "room-start",
+    room: "room-1",
+    name: "토론방",
+    context: "주제",
+    persona: "친절한 리뷰어",
+    participants: [{ uuid: "agent-1" }],
+    sent_at: "2026-07-22T00:00:00.000Z",
+  };
+  const notification = toChannelNotification(event);
+  expect(notification?.params.meta).toEqual({ room_id: "room-1", sent_at: "2026-07-22T00:00:00.000Z" });
+  expect(notification?.params.content).toContain("토론방");
+  expect(notification?.params.content).toContain("주제");
+  expect(notification?.params.content).toContain("친절한 리뷰어");
+});
+
+test("room-start 이벤트에 context·persona가 없으면 그 줄은 생략된다", () => {
+  const event = {
+    type: "room-start",
+    room: "room-1",
+    name: "토론방",
+    participants: [],
+    sent_at: "t",
+  };
+  const notification = toChannelNotification(event);
+  expect(notification?.params.content).not.toContain("컨텍스트");
+  expect(notification?.params.content).not.toContain("페르소나");
+});
+
+test("room-message 이벤트를 content와 meta(room_id·from_id·sent_at)로 조립한다", () => {
+  const event = {
+    type: "room-message",
+    room: "room-1",
+    from: "agent-1",
+    from_label: "agent-1-alias",
+    sent_at: "2026-07-22T00:00:00.000Z",
+    message: "발언 내용",
+  };
+  expect(toChannelNotification(event)).toEqual({
+    method: "notifications/claude/channel",
+    params: {
+      content: "발언 내용",
+      meta: { room_id: "room-1", from_id: "agent-1", sent_at: "2026-07-22T00:00:00.000Z" },
+    },
+  });
+});
+
+test("필수 필드가 빠진 room-message 이벤트는 null을 돌려준다", () => {
+  expect(toChannelNotification({ type: "room-message", room: "room-1" })).toBeNull();
+});

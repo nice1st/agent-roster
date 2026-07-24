@@ -9,6 +9,8 @@ import { type HygieneOverrides, resolveHygiene } from "./broker/hygiene";
 import { startKeepalive } from "./broker/keepalive";
 import { createRegisterHandler } from "./broker/register";
 import { Registry } from "./broker/registry";
+import { createRoomSendHandler } from "./broker/room-send";
+import { RoomSubscriptions } from "./broker/rooms";
 import { createSendHandler } from "./broker/send";
 import { createSetMetaHandler } from "./broker/set-meta";
 import type { Group } from "./store/groups";
@@ -81,15 +83,31 @@ export function startServer(config: ServerConfig) {
   }
   const roomsDeps = config.roomsDeps;
   if (roomsDeps !== undefined) {
+    const subscriptions = new RoomSubscriptions();
     Object.assign(
       routes,
       createRoomsApiRoutes({
         webAuth: roomsDeps.webAuth,
         registry,
         rooms: roomsDeps.rooms,
+        subscriptions,
         getUserGroups: roomsDeps.getUserGroups,
       }),
     );
+    routes["/room-send"] = {
+      POST: createRoomSendHandler({
+        registry,
+        subscriptions,
+        getRoom: (roomId) => {
+          const room = roomsDeps.rooms.get(roomId);
+          return room === null ? null : { status: room.status };
+        },
+        isParticipant: (roomId, uuid) => roomsDeps.rooms.isParticipant(roomId, uuid),
+        listParticipantUuids: (roomId) => roomsDeps.rooms.listParticipants(roomId).map((p) => p.agent_uuid),
+        recordMessage: (roomId, fromUuid, fromLabel, content) =>
+          roomsDeps.rooms.addMessage(roomId, fromUuid, fromLabel, content),
+      }),
+    };
   }
 
   const server = Bun.serve({

@@ -13,13 +13,18 @@ const mcp = new Server(
     capabilities: { experimental: { "claude/channel": {} }, tools: {} },
     instructions: `This session is an agent on the agent-orchestra broker: other agents can message you by UUID.
 
-Inbound messages arrive as:
+Inbound 1:1 messages arrive as:
 <channel from_id="SENDER_UUID" sent_at="..." [skill="SKILL_NAME"]>
 MESSAGE CONTENT
 </channel>
 
 If the tag carries a skill attribute, you MUST run that skill through the Skill tool right away — never answer from memory, never skip, never defer.
-Do not reply to bare acknowledgments ("OK", "thanks", "got it").`,
+Do not reply to bare acknowledgments ("OK", "thanks", "got it").
+
+You may also be invited into a room — a multi-agent discussion. Inbound room events arrive tagged with room_id:
+<channel room_id="ROOM_UUID" sent_at="...">room intro + your persona</channel> when the room starts, and
+<channel room_id="ROOM_UUID" from_id="SENDER_UUID" sent_at="...">message</channel> for each room discussion turn.
+Reply in the room with send_room (never send_message — room replies must be recorded and fanned out to everyone).`,
   },
 );
 
@@ -56,6 +61,19 @@ mcp.setRequestHandler(ListToolsRequestSchema, () => ({
           },
         },
         required: ["to_id", "message"],
+      },
+    },
+    {
+      name: "send_room",
+      description:
+        "Send a message to a room by room UUID. Unlike send_message, this is recorded and fanned out to every room participant — use it only for room discussions, never as a substitute for 1:1 send_message.",
+      inputSchema: {
+        type: "object" as const,
+        properties: {
+          room_id: { type: "string" as const, description: "Target room UUID" },
+          message: { type: "string" as const, description: "Message text to deliver" },
+        },
+        required: ["room_id", "message"],
       },
     },
     {
@@ -99,7 +117,8 @@ function textResult(text: string, isError = false) {
   return { content: [{ type: "text" as const, text }], ...(isError ? { isError: true } : {}) };
 }
 
-async function handleRegister(args: { alias?: string; status?: string }) {
+/** server.test.ts가 실제 브로커에 register → send_room을 그대로 태우는 동작 테스트에 쓰도록 export한다. */
+export async function handleRegister(args: { alias?: string; status?: string }) {
   const brokerUrl = process.env[ENV_BROKER_URL];
   const token = process.env[ENV_BROKER_TOKEN];
   if (brokerUrl === undefined || token === undefined) {
@@ -167,6 +186,39 @@ async function handleSendMessage(args: { to_id?: string; message?: string; skill
     return textResult(`Delivered to ${to_id}.`);
   } catch (e) {
     return textResult(`send_message failed: ${e instanceof Error ? e.message : String(e)}`, true);
+  }
+}
+
+/** server.test.ts가 storedUuid 상태 없이 send_room의 HTTP 호출·에러 처리만 동작 테스트하도록 export한다. */
+export async function handleSendRoom(args: { room_id?: string; message?: string }) {
+  const { room_id, message } = args;
+  if (typeof room_id !== "string" || typeof message !== "string") {
+    return textResult("room_id and message are required.", true);
+  }
+  if (storedUuid === undefined) {
+    return textResult("Not registered. Call register first.", true);
+  }
+  const brokerUrl = process.env[ENV_BROKER_URL];
+  if (brokerUrl === undefined) {
+    return textResult(`${ENV_BROKER_URL} 환경변수가 필요하다`, true);
+  }
+
+  try {
+    const res = await fetch(new URL("/room-send", brokerUrl), {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ from: storedUuid, room: room_id, message }),
+    });
+    if (!res.ok) {
+      return textResult(`send_room failed: ${res.status} ${await res.text()}`.trim(), true);
+    }
+    const result = (await res.json()) as { ok: boolean; error?: string };
+    if (!result.ok) {
+      return textResult(`send_room rejected: ${result.error}`, true);
+    }
+    return textResult(`Delivered to room ${room_id}.`);
+  } catch (e) {
+    return textResult(`send_room failed: ${e instanceof Error ? e.message : String(e)}`, true);
   }
 }
 
@@ -314,6 +366,8 @@ mcp.setRequestHandler(CallToolRequestSchema, async (req) => {
       return handleRegister(args as { alias?: string; status?: string });
     case "send_message":
       return handleSendMessage(args as { to_id?: string; message?: string; skill?: string });
+    case "send_room":
+      return handleSendRoom(args as { room_id?: string; message?: string });
     case "list_peers":
       return handleListPeers();
     case "set_groups":

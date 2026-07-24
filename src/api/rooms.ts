@@ -3,7 +3,7 @@
 
 import type { WebAuth } from "../auth/web-auth";
 import type { Registry } from "../broker/registry";
-import { fanoutRoomStart } from "../broker/rooms";
+import { fanoutRoomStart, type RoomSubscriptions } from "../broker/rooms";
 import type { Group } from "../store/groups";
 import type { RoomStore } from "../store/rooms";
 import { isVisibleToViewer } from "./agents";
@@ -12,6 +12,7 @@ export interface RoomsApiDeps {
   webAuth: WebAuth;
   registry: Registry;
   rooms: RoomStore;
+  subscriptions: RoomSubscriptions;
   getUserGroups(userId: string): Group[];
 }
 
@@ -54,7 +55,7 @@ function roomIdFromPath(req: Request, segmentsFromEnd: number): string {
 export function createRoomsApiRoutes(
   deps: RoomsApiDeps,
 ): Record<string, Partial<Record<"GET" | "POST" | "DELETE" | "PATCH", RouteHandler>>> {
-  const { webAuth, registry, rooms, getUserGroups } = deps;
+  const { webAuth, registry, rooms, subscriptions, getUserGroups } = deps;
 
   /** created_by 본인 검증 — room이 없으면 404, 본인이 아니면 403. 통과하면 room을 돌려준다. */
   async function requireOwnedRoom(
@@ -156,6 +157,33 @@ export function createRoomsApiRoutes(
           );
           return Response.json({ room: rooms.get(roomId) });
         });
+      }),
+    },
+
+    "/api/rooms/:id/watch": {
+      POST: requireSession(webAuth, async (req, userId) => {
+        const roomId = roomIdFromPath(req, 2);
+        const room = rooms.get(roomId);
+        if (room === null) return jsonError(404, "room not found");
+        const body = await parseJsonBody(req);
+        if (body === null || !isNonEmptyString(body.uuid)) return jsonError(400, "uuid required");
+
+        const entry = registry.get(body.uuid);
+        if (entry === undefined || entry.owner !== userId) return jsonError(403, "not your entry");
+        subscriptions.add(roomId, body.uuid);
+        return Response.json({ ok: true });
+      }),
+      DELETE: requireSession(webAuth, async (req, userId) => {
+        const roomId = roomIdFromPath(req, 2);
+        const room = rooms.get(roomId);
+        if (room === null) return jsonError(404, "room not found");
+        const body = await parseJsonBody(req);
+        if (body === null || !isNonEmptyString(body.uuid)) return jsonError(400, "uuid required");
+
+        const entry = registry.get(body.uuid);
+        if (entry === undefined || entry.owner !== userId) return jsonError(403, "not your entry");
+        subscriptions.remove(roomId, body.uuid);
+        return Response.json({ ok: true });
       }),
     },
   };

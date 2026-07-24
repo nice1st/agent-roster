@@ -6,6 +6,7 @@ import { AdminScreen } from "./admin";
 import { AgentsPage } from "./agents";
 import { ChatPanel } from "./chat";
 import { MyAgentPage } from "./my-agent";
+import { RoomPanel } from "./room-panel";
 import { RoomsPage } from "./rooms";
 
 const authClient = createAuthClient();
@@ -16,6 +17,7 @@ export function App() {
   const { data: session, isPending } = authClient.useSession();
   const [screen, setScreen] = useState<Screen>("home");
   const [chatTarget, setChatTarget] = useState<{ uuid: string; label: string } | null>(null);
+  const [roomTarget, setRoomTarget] = useState<{ id: string; name: string } | null>(null);
 
   if (isPending) {
     return <p>세션 확인 중…</p>;
@@ -37,6 +39,10 @@ export function App() {
     return <ChatPanel peerUuid={chatTarget.uuid} peerLabel={chatTarget.label} onClose={() => setChatTarget(null)} />;
   }
 
+  if (roomTarget !== null) {
+    return <RoomPanel roomId={roomTarget.id} roomName={roomTarget.name} onClose={() => setRoomTarget(null)} />;
+  }
+
   if (screen === "my-agent") {
     return <MyAgentPage onBack={() => setScreen("home")} />;
   }
@@ -46,8 +52,7 @@ export function App() {
   }
 
   if (screen === "rooms") {
-    // active room 대화 화면은 슬라이스 13에서 붙인다 — 지금은 room 관리(draft 배치·시작)까지.
-    return <RoomsPage onBack={() => setScreen("home")} onOpenRoom={() => {}} />;
+    return <RoomsPage onBack={() => setScreen("home")} onOpenRoom={(id, name) => setRoomTarget({ id, name })} />;
   }
 
   return (
