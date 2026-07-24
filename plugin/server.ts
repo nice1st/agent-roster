@@ -83,6 +83,19 @@ async function handleRegister(args: { alias?: string; status?: string }) {
         const notification = toChannelNotification(event);
         if (notification !== null) mcp.notification(notification).catch(() => {});
       },
+      // 끊기면 사용자에게 알린다(04 §1) — 재등록 여부·시점은 클라이언트 자율이므로 알림만 한다.
+      onClose: () => {
+        mcp
+          .notification({
+            method: "notifications/claude/channel",
+            params: {
+              content:
+                "브로커와의 연결이 끊겼다. register를 다시 실행하면 보관된 UUID로 복귀를 시도한다. 사용자에게 이 사실을 알려라.",
+              meta: { source: "agent-orchestra-system", sent_at: new Date().toISOString() },
+            },
+          })
+          .catch(() => {});
+      },
     });
     storedUuid = connection.uuid;
     return textResult(`registered: ${connection.uuid}`);

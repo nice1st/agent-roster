@@ -43,6 +43,9 @@ export function startServer(config: ServerConfig) {
 
   const server = Bun.serve({
     port: config.port,
+    // Bun.serve 기본 유휴 타임아웃은 10초 — keepalive 주기(30초)보다 짧아 SSE를 서버가 먼저 끊는다(02 §3).
+    // 연결 생존 관리는 자체 위생(keepalive push 실패·cancel)이 담당하므로 비활성.
+    idleTimeout: 0,
     routes,
     fetch() {
       return new Response("Not Found", { status: 404 });

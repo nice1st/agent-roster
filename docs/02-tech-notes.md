@@ -73,6 +73,7 @@
 
 - **`Bun.randomUUIDv7()` 동일 ms 단조성 위반 존재** — 100만 회 연속 생성 중 198회 역전. 교훈: uuidv7은 식별자로만 쓰고, 정렬·커서·이벤트 재생 기준은 **삽입 순서 정수(sqlite rowid 등)** 를 별도로 둔다.
 - `Bun.serve`의 `routes`(경로 파라미터 지원)가 우선 매칭되고, 미스는 `fetch` 콜백으로 폴백 — 신규 라우트와 레거시 라우팅의 공존 패턴으로 사용 가능.
+- **`Bun.serve`의 기본 `idleTimeout`은 10초** — 유휴 연결을 서버가 먼저 끊는다(로그: "request timed out after 10 seconds"). SSE처럼 오래 사는 연결은 이보다 긴 keepalive가 소용없다(30초 keepalive가 10초 타임아웃에 걸림 — 스모크에서 발견). `idleTimeout: 0`으로 비활성됨을 실행 확인(16초 유휴 후 전달 성공). 밀리초가 아니라 **초 단위** 옵션.
 - `Bun.serve`의 `routes`에 HTML import를 직접 올려 React 포함 번들을 자동 서빙 가능(실행) — 번들은 `/_bun/client/*`로 제공되고 같은 서버의 API 라우트와 공존. `bun build <html> --outdir` 정적 산출 폴백도 동작.
 - **`Bun.serve` 응답 스트림은 소켓 backpressure를 유저스페이스에 전파하지 않음** — 읽지 않는 소켓에 2MB를 밀어도 큐가 다음 tick에 비워져 `desiredSize`가 HWM에 고정(push), pull 스트림은 소켓 포화에도 pull을 무한 호출(OOM), direct `write()`는 항상 전량 기록 보고. `desiredSize`가 정확한 건 **같은 tick 안의 동기 버스트**뿐. 교훈: 미전송 큐 상한은 동기 버스트 범위에서만 동작하며, 여러 tick에 걸친 느린 수신자의 backlog는 Bun 네이티브 버퍼에 숨어 관측 불가.
 
