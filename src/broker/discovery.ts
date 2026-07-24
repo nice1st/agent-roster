@@ -26,8 +26,8 @@ async function parseBody(req: Request): Promise<Record<string, unknown> | null> 
   }
 }
 
-/** 유효노출(X) — exposure가 "follow"면 현재 소속 전체, 목록이면 목록 ∩ 현재 소속(01 §3.2). */
-function effectiveExposure(exposure: Exposure, currentGroupIds: string[]): Set<string> {
+/** 유효노출(X) — exposure가 "follow"면 현재 소속 전체, 목록이면 목록 ∩ 현재 소속(01 §3.2). 슬라이스 10 agents API가 재사용. */
+export function effectiveExposure(exposure: Exposure, currentGroupIds: string[]): Set<string> {
   if (exposure === "follow") return new Set(currentGroupIds);
   const current = new Set(currentGroupIds);
   return new Set(exposure.filter((id) => current.has(id)));

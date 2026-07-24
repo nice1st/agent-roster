@@ -34,6 +34,7 @@ if (import.meta.main) {
     webRoutes: { "/": webIndex },
     adminRoutes: createAdminApiRoutes({ webAuth, db }),
     groupsDeps: { getUserGroups: (userId) => groups.getGroupsForUser(userId) },
+    agentsDeps: { webAuth, getUserGroups: (userId) => groups.getGroupsForUser(userId) },
   });
   console.log(`agent-orchestra listening on ${server.url}`);
 }

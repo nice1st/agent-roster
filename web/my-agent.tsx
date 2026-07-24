@@ -1,11 +1,23 @@
-// 내 에이전트 화면(05 §2 #6) — 로그인 상태에서 브로커 regi용 토큰을 발급한다.
+// 내 에이전트 화면(05 §2 #6, #10) — 로그인 상태에서 브로커 regi용 토큰을 발급하고, 접속 중인 내 에이전트 목록을 본다.
 // jwt 플러그인의 토큰 엔드포인트(GET /api/auth/token, 세션 필요)를 authClient.token()으로 호출한다.
 
 import { jwtClient } from "better-auth/client/plugins";
 import { createAuthClient } from "better-auth/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const authClient = createAuthClient({ plugins: [jwtClient()] });
+
+interface AgentMeta {
+  machine?: string;
+  cwd?: string;
+  alias?: string;
+  status?: string;
+}
+
+interface MyAgentListItem {
+  uuid: string;
+  meta: AgentMeta;
+}
 
 export interface MyAgentPageProps {
   onBack: () => void;
@@ -15,6 +27,8 @@ export function MyAgentPage({ onBack }: MyAgentPageProps) {
   const [token, setToken] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [myAgents, setMyAgents] = useState<MyAgentListItem[]>([]);
+  const [listError, setListError] = useState<string | null>(null);
 
   async function issueToken() {
     setError(null);
@@ -32,6 +46,23 @@ export function MyAgentPage({ onBack }: MyAgentPageProps) {
     await navigator.clipboard.writeText(token);
     setCopied(true);
   }
+
+  async function reloadMyAgents() {
+    try {
+      const res = await fetch("/api/my-agents");
+      if (!res.ok) throw new Error(`요청 실패: /api/my-agents (${res.status})`);
+      const body = (await res.json()) as { agents: MyAgentListItem[] };
+      setMyAgents(body.agents);
+      setListError(null);
+    } catch (e) {
+      setListError(e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: 마운트 시 1회만 초기 로드한다.
+  useEffect(() => {
+    reloadMyAgents();
+  }, []);
 
   return (
     <main>
@@ -52,6 +83,33 @@ export function MyAgentPage({ onBack }: MyAgentPageProps) {
           {copied && <span> 복사됨</span>}
         </div>
       )}
+
+      <h2>접속 중인 내 에이전트</h2>
+      {listError !== null && <p role="alert">{listError}</p>}
+      <button type="button" onClick={reloadMyAgents}>
+        새로고침
+      </button>
+      <table>
+        <thead>
+          <tr>
+            <th>alias</th>
+            <th>status</th>
+            <th>machine</th>
+            <th>uuid</th>
+          </tr>
+        </thead>
+        <tbody>
+          {myAgents.map((a) => (
+            <tr key={a.uuid}>
+              <td>{a.meta.alias ?? ""}</td>
+              <td>{a.meta.status ?? ""}</td>
+              <td>{a.meta.machine ?? ""}</td>
+              <td>{a.uuid}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
       <p>
         <button type="button" onClick={onBack}>
           뒤로
