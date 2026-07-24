@@ -6,10 +6,11 @@ import { AdminScreen } from "./admin";
 import { AgentsPage } from "./agents";
 import { ChatPanel } from "./chat";
 import { MyAgentPage } from "./my-agent";
+import { RoomsPage } from "./rooms";
 
 const authClient = createAuthClient();
 
-type Screen = "home" | "my-agent" | "agents";
+type Screen = "home" | "my-agent" | "agents" | "rooms";
 
 export function App() {
   const { data: session, isPending } = authClient.useSession();
@@ -44,6 +45,11 @@ export function App() {
     return <AgentsPage onBack={() => setScreen("home")} onChat={(uuid, label) => setChatTarget({ uuid, label })} />;
   }
 
+  if (screen === "rooms") {
+    // active room 대화 화면은 슬라이스 13에서 붙인다 — 지금은 room 관리(draft 배치·시작)까지.
+    return <RoomsPage onBack={() => setScreen("home")} onOpenRoom={() => {}} />;
+  }
+
   return (
     <main>
       <h1>agent-orchestra</h1>
@@ -53,6 +59,9 @@ export function App() {
       </button>
       <button type="button" onClick={() => setScreen("agents")}>
         에이전트 목록
+      </button>
+      <button type="button" onClick={() => setScreen("rooms")}>
+        room
       </button>
       <button type="button" onClick={() => authClient.signOut()}>
         로그아웃

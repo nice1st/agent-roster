@@ -34,8 +34,9 @@ async function ownerEmailMap(webAuth: WebAuth): Promise<Map<string, string>> {
   return new Map(users.map((u) => [u.id, u.email]));
 }
 
-/** 세션 user의 현재 그룹 전체 ∩ 유효노출(대상) ≠ ∅ (discovery.ts의 isVisible과 동일 교집합 판정). */
-function isVisibleToViewer(
+/** 세션 user의 현재 그룹 전체 ∩ 유효노출(대상) ≠ ∅ (discovery.ts의 isVisible과 동일 교집합 판정).
+ * rooms.ts의 참여자 배치 가시성 검증이 재사용한다(05 §2 #12 — 재구현 금지). */
+export function isVisibleToViewer(
   entry: RegistryEntry,
   viewerGroupIds: string[],
   getUserGroups: (userId: string) => Group[],

@@ -1,6 +1,7 @@
 import type { HTMLBundle } from "bun";
 import { createAgentsApiRoutes } from "./api/agents";
 import { createChatApiRoutes } from "./api/chat";
+import { createRoomsApiRoutes } from "./api/rooms";
 import type { TokenVerifier } from "./auth/token";
 import type { WebAuth } from "./auth/web-auth";
 import { createGroupsHandler, createPeersHandler, createSetGroupsHandler } from "./broker/discovery";
@@ -11,6 +12,7 @@ import { Registry } from "./broker/registry";
 import { createSendHandler } from "./broker/send";
 import { createSetMetaHandler } from "./broker/set-meta";
 import type { Group } from "./store/groups";
+import type { RoomStore } from "./store/rooms";
 
 export interface ServerConfig {
   port: number;
@@ -32,6 +34,8 @@ export interface ServerConfig {
   agentsDeps?: { webAuth: WebAuth; getUserGroups(userId: string): Group[] };
   /** 없으면 /api/chat/stream을 마운트하지 않는다(05 §2 #11) — agentsDeps와 동일한 이유로 registry 의존. */
   chatDeps?: { webAuth: WebAuth };
+  /** 없으면 /api/rooms*을 마운트하지 않는다(05 §2 #12) — agentsDeps와 동일한 이유로 registry 의존. */
+  roomsDeps?: { webAuth: WebAuth; rooms: RoomStore; getUserGroups(userId: string): Group[] };
 }
 
 type RouteHandler = (req: Request) => Response | Promise<Response>;
@@ -74,6 +78,18 @@ export function startServer(config: ServerConfig) {
   const chatDeps = config.chatDeps;
   if (chatDeps !== undefined) {
     Object.assign(routes, createChatApiRoutes({ webAuth: chatDeps.webAuth, registry }));
+  }
+  const roomsDeps = config.roomsDeps;
+  if (roomsDeps !== undefined) {
+    Object.assign(
+      routes,
+      createRoomsApiRoutes({
+        webAuth: roomsDeps.webAuth,
+        registry,
+        rooms: roomsDeps.rooms,
+        getUserGroups: roomsDeps.getUserGroups,
+      }),
+    );
   }
 
   const server = Bun.serve({

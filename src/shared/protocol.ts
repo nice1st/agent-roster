@@ -19,4 +19,25 @@ export interface MessageEvent {
   skill?: string; // 발신 요청에 있을 때만 포함
 }
 
-export type BrokerEvent = RegisteredEvent | ErrorEvent | MessageEvent;
+// room 시작 팬아웃(05 §2 #12) — persona는 수신자 자신의 것이라 참여자별 개별 프레임으로 나간다.
+export interface RoomStartEvent {
+  type: "room-start";
+  room: string;
+  name: string;
+  context?: string;
+  persona?: string;
+  participants: { uuid: string; alias?: string }[];
+  sent_at: string;
+}
+
+// room 발언 팬아웃(05 §2 #13) — from_label은 발신 시점 레지스트리 alias(웹이면 email alias 그대로).
+export interface RoomMessageEvent {
+  type: "room-message";
+  room: string;
+  from: string;
+  from_label?: string;
+  sent_at: string;
+  message: string;
+}
+
+export type BrokerEvent = RegisteredEvent | ErrorEvent | MessageEvent | RoomStartEvent | RoomMessageEvent;
