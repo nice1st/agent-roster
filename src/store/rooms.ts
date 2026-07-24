@@ -25,6 +25,7 @@ export interface RoomParticipant {
 }
 
 export interface Message {
+  id: number; // rowid — 정렬·커서 기준(05 §4)
   room_id: string;
   from_uuid: string;
   from_label: string | null;
@@ -78,6 +79,18 @@ export function createRoomStore(db: Database) {
       );
     },
 
+    /** active→ended 전환. 폭파 함수(broker/rooms.ts의 endRoom)가 상태 전환에 쓴다(05 §4 room 종료 처리). */
+    end(roomId: string): void {
+      db.prepare("UPDATE rooms SET status = 'ended' WHERE id = ?").run(roomId);
+    },
+
+    /** 만료 스위프 대상 — status='active' AND ends_at <= now(05 §4). */
+    listExpired(nowIso: string): Room[] {
+      return db
+        .query<Room, [string]>("SELECT * FROM rooms WHERE status = 'active' AND ends_at IS NOT NULL AND ends_at <= ?")
+        .all(nowIso);
+    },
+
     addParticipant(
       roomId: string,
       agentUuid: string,
@@ -116,22 +129,34 @@ export function createRoomStore(db: Database) {
 
     addMessage(roomId: string, fromUuid: string, fromLabel: string | undefined, content: string): Message {
       const sentAt = new Date().toISOString();
-      db.prepare("INSERT INTO messages (room_id, from_uuid, from_label, content, sent_at) VALUES (?, ?, ?, ?, ?)").run(
-        roomId,
-        fromUuid,
-        fromLabel ?? null,
+      const result = db
+        .prepare("INSERT INTO messages (room_id, from_uuid, from_label, content, sent_at) VALUES (?, ?, ?, ?, ?)")
+        .run(roomId, fromUuid, fromLabel ?? null, content, sentAt);
+      return {
+        id: Number(result.lastInsertRowid),
+        room_id: roomId,
+        from_uuid: fromUuid,
+        from_label: fromLabel ?? null,
         content,
-        sentAt,
-      );
-      return { room_id: roomId, from_uuid: fromUuid, from_label: fromLabel ?? null, content, sent_at: sentAt };
+        sent_at: sentAt,
+      };
     },
 
     listMessages(roomId: string): Message[] {
       return db
         .query<Message, [string]>(
-          "SELECT room_id, from_uuid, from_label, content, sent_at FROM messages WHERE room_id = ? ORDER BY rowid",
+          "SELECT rowid AS id, room_id, from_uuid, from_label, content, sent_at FROM messages WHERE room_id = ? ORDER BY rowid",
         )
         .all(roomId);
+    },
+
+    /** rowid 오름차순 커서 조회(05 §2 #15 이음새) — after 미지정이면 처음부터, limit 개수만큼. */
+    listMessagesAfter(roomId: string, after: number, limit: number): Message[] {
+      return db
+        .query<Message, [string, number, number]>(
+          "SELECT rowid AS id, room_id, from_uuid, from_label, content, sent_at FROM messages WHERE room_id = ? AND rowid > ? ORDER BY rowid LIMIT ?",
+        )
+        .all(roomId, after, limit);
     },
   };
 }

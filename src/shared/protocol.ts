@@ -40,4 +40,18 @@ export interface RoomMessageEvent {
   message: string;
 }
 
-export type BrokerEvent = RegisteredEvent | ErrorEvent | MessageEvent | RoomStartEvent | RoomMessageEvent;
+// room 종료(폭파) 팬아웃(05 §2 #14) — 버튼 폭파·만료 스위프가 같은 프레임을 낸다(05 §4 room 종료 처리).
+export interface RoomEndEvent {
+  type: "room-end";
+  room: string;
+  name: string;
+  sent_at: string;
+}
+
+export type BrokerEvent =
+  | RegisteredEvent
+  | ErrorEvent
+  | MessageEvent
+  | RoomStartEvent
+  | RoomMessageEvent
+  | RoomEndEvent;

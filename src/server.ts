@@ -5,12 +5,13 @@ import { createRoomsApiRoutes } from "./api/rooms";
 import type { TokenVerifier } from "./auth/token";
 import type { WebAuth } from "./auth/web-auth";
 import { createGroupsHandler, createPeersHandler, createSetGroupsHandler } from "./broker/discovery";
+import { startHeartbeat } from "./broker/heartbeat";
 import { type HygieneOverrides, resolveHygiene } from "./broker/hygiene";
-import { startKeepalive } from "./broker/keepalive";
+import { sweepKeepalive } from "./broker/keepalive";
 import { createRegisterHandler } from "./broker/register";
 import { Registry } from "./broker/registry";
 import { createRoomSendHandler } from "./broker/room-send";
-import { RoomSubscriptions } from "./broker/rooms";
+import { RoomSubscriptions, sweepExpiredRooms } from "./broker/rooms";
 import { createSendHandler } from "./broker/send";
 import { createSetMetaHandler } from "./broker/set-meta";
 import type { Group } from "./store/groups";
@@ -49,7 +50,8 @@ export function startServer(config: ServerConfig) {
   const register = createRegisterHandler({ registry, verifier: config.verifier });
   const send = createSendHandler({ registry });
   const setMeta = createSetMetaHandler({ registry });
-  startKeepalive(registry, hygiene.keepaliveIntervalMs);
+  // 하트비트 작업 목록 — 앱 전체 인터벌은 이 하나뿐이다(05 §4). roomsDeps가 있으면 만료 스위프도 등록한다.
+  const heartbeatTasks: Array<() => void> = [() => sweepKeepalive(registry)];
 
   const routes: Record<string, RouteValue> = {
     "/health": () => Response.json({ ok: true }),
@@ -100,7 +102,7 @@ export function startServer(config: ServerConfig) {
         subscriptions,
         getRoom: (roomId) => {
           const room = roomsDeps.rooms.get(roomId);
-          return room === null ? null : { status: room.status };
+          return room === null ? null : { status: room.status, ends_at: room.ends_at };
         },
         isParticipant: (roomId, uuid) => roomsDeps.rooms.isParticipant(roomId, uuid),
         listParticipantUuids: (roomId) => roomsDeps.rooms.listParticipants(roomId).map((p) => p.agent_uuid),
@@ -108,11 +110,23 @@ export function startServer(config: ServerConfig) {
           roomsDeps.rooms.addMessage(roomId, fromUuid, fromLabel, content),
       }),
     };
+    // 만료 스위프 — 하트비트 작업으로 등록(05 §4). 버튼 폭파와 같은 endRoom을 탄다(broker/rooms.ts).
+    heartbeatTasks.push(() =>
+      sweepExpiredRooms({
+        registry,
+        subscriptions,
+        markEnded: (id) => roomsDeps.rooms.end(id),
+        listParticipantUuids: (id) => roomsDeps.rooms.listParticipants(id).map((p) => p.agent_uuid),
+        listExpiredRooms: (nowIso) => roomsDeps.rooms.listExpired(nowIso),
+      }),
+    );
   }
+
+  startHeartbeat(hygiene.heartbeatIntervalMs, heartbeatTasks);
 
   const server = Bun.serve({
     port: config.port,
-    // Bun.serve 기본 유휴 타임아웃은 10초 — keepalive 주기(30초)보다 짧아 SSE를 서버가 먼저 끊는다(02 §3).
+    // Bun.serve 기본 유휴 타임아웃은 10초 — 하트비트 주기(기본 30초, keepalive를 그 위에서 돌림)보다 짧아 SSE를 서버가 먼저 끊는다(02 §3).
     // 연결 생존 관리는 자체 위생(keepalive push 실패·cancel)이 담당하므로 비활성.
     idleTimeout: 0,
     routes,

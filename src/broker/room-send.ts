@@ -1,5 +1,6 @@
 // POST /room-send — room 발언(브로커, 무인증, from 자기신고, 05 §2 #13). 1:1 send와 별도 인터페이스인 이유는
 // room 발언이 기록되고 전원에게 팬아웃되기 때문(01 §5·04 §2 send_room 행). store 직접 import 금지 — deps로 주입.
+// 발언 시점 ends_at 만료 검사(05 §2 #14) — 만료의 정확한 강제는 여기가 담당, 폭파(상태 전환·통보)는 스위프가 담당(05 §4).
 
 import type { Registry } from "./registry";
 import { fanoutRoomMessage, fanoutTargets, type RoomSubscriptions } from "./rooms";
@@ -12,6 +13,7 @@ interface RoomSendBody {
 
 export interface RoomInfo {
   status: "draft" | "active" | "ended";
+  ends_at: string | null;
 }
 
 export interface RoomSendDeps {
@@ -47,7 +49,8 @@ export function createRoomSendHandler(deps: RoomSendDeps) {
     if (typeof message !== "string") return jsonError(400, "message must be a string");
 
     const roomInfo = deps.getRoom(room);
-    if (roomInfo === null || roomInfo.status !== "active") {
+    const expired = roomInfo !== null && roomInfo.ends_at !== null && roomInfo.ends_at <= new Date().toISOString();
+    if (roomInfo === null || roomInfo.status !== "active" || expired) {
       return Response.json({ ok: false, error: "Room not active" });
     }
 

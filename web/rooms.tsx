@@ -82,6 +82,15 @@ export function RoomsPage({ onBack, onOpenRoom }: RoomsPageProps) {
     }
   }
 
+  async function endRoom(roomId: string) {
+    const res = await postJson(`/api/rooms/${roomId}/end`, {});
+    if (res.ok) {
+      await reload();
+    } else {
+      setError((await res.json()).error ?? "종료 실패");
+    }
+  }
+
   const selected = rooms.find((r) => r.id === selectedRoomId) ?? null;
 
   return (
@@ -131,8 +140,18 @@ export function RoomsPage({ onBack, onOpenRoom }: RoomsPageProps) {
                     </button>
                   )}
                   {r.status === "active" && (
+                    <>
+                      <button type="button" onClick={() => onOpenRoom(r.id, r.name)}>
+                        열기
+                      </button>
+                      <button type="button" onClick={() => endRoom(r.id)}>
+                        종료
+                      </button>
+                    </>
+                  )}
+                  {r.status === "ended" && (
                     <button type="button" onClick={() => onOpenRoom(r.id, r.name)}>
-                      열기
+                      기록 보기
                     </button>
                   )}
                 </td>

@@ -221,3 +221,20 @@ test("active가 아닌 room 발언은 거부된다", async () => {
   const res = await roomSend({ from: crypto.randomUUID(), room: room.id, message: "아직 시작 전" });
   expect(await res.json()).toEqual({ ok: false, error: "Room not active" });
 });
+
+test("ends_at이 지난 room 발언은 즉시 거부된다", async () => {
+  const { roomId, agent1 } = await setUpActiveRoom();
+  // ends_at을 과거로 직접 앞당긴다 — 만료 검사가 status와 무관하게 ends_at을 봄을 결정론적으로 검증(05 §4).
+  db.prepare("UPDATE rooms SET ends_at = ? WHERE id = ?").run(new Date(Date.now() - 1000).toISOString(), roomId);
+
+  const res = await roomSend({ from: agent1.uuid, room: roomId, message: "이미 늦었다" });
+  expect(await res.json()).toEqual({ ok: false, error: "Room not active" });
+});
+
+test("폭파된(ended) room 발언은 거부된다", async () => {
+  const { roomId, agent1 } = await setUpActiveRoom();
+  db.prepare("UPDATE rooms SET status = 'ended' WHERE id = ?").run(roomId);
+
+  const res = await roomSend({ from: agent1.uuid, room: roomId, message: "이미 끝났다" });
+  expect(await res.json()).toEqual({ ok: false, error: "Room not active" });
+});

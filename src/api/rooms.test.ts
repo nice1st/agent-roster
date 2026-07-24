@@ -231,3 +231,76 @@ test("draft가 아니면 배치가 거부된다", async () => {
   );
   expect(addRes.status).toBe(400);
 });
+
+test("버튼 폭파 시 참여자·구독자에게 room-end가 가고 상태가 ended가 된다", async () => {
+  const owner = await createSessionUser(db, "owner7@example.com");
+  const a1owner = await createSessionUser(db, "a1owner7@example.com");
+  const g1 = groups.create("g1");
+  groups.grant(owner.id, g1.id);
+  groups.grant(a1owner.id, g1.id);
+  const agent1 = await registerAgent(a1owner.id, "agent-1");
+
+  const createRes = await api("/api/rooms", owner.cookie, jsonInit("POST", { name: "폭파방" }));
+  const { room } = (await createRes.json()) as { room: { id: string } };
+  await api(`/api/rooms/${room.id}/participants`, owner.cookie, jsonInit("POST", { agent_uuid: agent1.uuid }));
+  await api(`/api/rooms/${room.id}/start`, owner.cookie, jsonInit("POST", {}));
+  await agent1.nextFrame(); // room-start 소비
+
+  // 구독자(웹 세션)도 room-end를 받는지 확인 — register 코어로 웹 세션과 동일한 exposure [] 엔트리를 흉내낸다.
+  const webRes = await fetch(new URL("/register", started.server.url), {
+    method: "POST",
+    headers: { authorization: `Bearer ${await signToken(keys.privateKey, owner.id)}` },
+    body: "{}",
+  });
+  if (webRes.body === null) throw new Error("no body");
+  const reader = webRes.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = "";
+  async function nextWebFrame(): Promise<Record<string, unknown>> {
+    let idx = buf.indexOf("\n\n");
+    while (idx === -1) {
+      const { done, value } = await reader.read();
+      if (done) throw new Error("stream ended without frame");
+      buf += decoder.decode(value, { stream: true });
+      idx = buf.indexOf("\n\n");
+    }
+    const frame = buf.slice(0, idx);
+    buf = buf.slice(idx + 2);
+    return JSON.parse(frame.slice("data: ".length));
+  }
+  const webRegistered = await nextWebFrame();
+  const webUuid = webRegistered.uuid as string;
+  await api(`/api/rooms/${room.id}/watch`, owner.cookie, jsonInit("POST", { uuid: webUuid }));
+
+  const endRes = await api(`/api/rooms/${room.id}/end`, owner.cookie, jsonInit("POST", {}));
+  expect(endRes.status).toBe(200);
+  const { room: ended } = (await endRes.json()) as { room: { status: string } };
+  expect(ended.status).toBe("ended");
+
+  const agentFrame = await agent1.nextFrame();
+  expect(agentFrame).toEqual({ type: "room-end", room: room.id, name: "폭파방", sent_at: expect.any(String) });
+
+  const webFrame = await nextWebFrame();
+  expect(webFrame).toEqual({ type: "room-end", room: room.id, name: "폭파방", sent_at: expect.any(String) });
+});
+
+test("남의 room 폭파는 403이다", async () => {
+  const owner = await createSessionUser(db, "owner8@example.com");
+  const intruder = await createSessionUser(db, "intruder8@example.com");
+  const createRes = await api("/api/rooms", owner.cookie, jsonInit("POST", { name: "r" }));
+  const { room } = (await createRes.json()) as { room: { id: string } };
+
+  const endRes = await api(`/api/rooms/${room.id}/end`, intruder.cookie, jsonInit("POST", {}));
+  expect(endRes.status).toBe(403);
+});
+
+test("이미 ended인 room을 다시 폭파하면 400이다", async () => {
+  const owner = await createSessionUser(db, "owner9@example.com");
+  const createRes = await api("/api/rooms", owner.cookie, jsonInit("POST", { name: "r" }));
+  const { room } = (await createRes.json()) as { room: { id: string } };
+  await api(`/api/rooms/${room.id}/start`, owner.cookie, jsonInit("POST", {}));
+  await api(`/api/rooms/${room.id}/end`, owner.cookie, jsonInit("POST", {}));
+
+  const endRes = await api(`/api/rooms/${room.id}/end`, owner.cookie, jsonInit("POST", {}));
+  expect(endRes.status).toBe(400);
+});

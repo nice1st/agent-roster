@@ -1,9 +1,9 @@
-// 웹 room API — prefix /api/rooms(05 §2 #12·#13). 전부 세션 필요(없으면 401). room 조작(participants·start·PATCH)은
+// 웹 room API — prefix /api/rooms(05 §2 #12·#13·#14). 전부 세션 필요(없으면 401). room 조작(participants·start·PATCH·end)은
 // created_by 본인만, 아니면 403. 참여자 배치 대상은 세션 user에게 보이는 에이전트만(agents.ts의 isVisibleToViewer 재사용).
 
 import type { WebAuth } from "../auth/web-auth";
 import type { Registry } from "../broker/registry";
-import { fanoutRoomStart, type RoomSubscriptions } from "../broker/rooms";
+import { endRoom as brokerEndRoom, fanoutRoomStart, type RoomSubscriptions } from "../broker/rooms";
 import type { Group } from "../store/groups";
 import type { RoomStore } from "../store/rooms";
 import { isVisibleToViewer } from "./agents";
@@ -154,6 +154,25 @@ export function createRoomsApiRoutes(
               alias: p.alias_snapshot ?? undefined,
               persona: p.persona ?? undefined,
             })),
+          );
+          return Response.json({ room: rooms.get(roomId) });
+        });
+      }),
+    },
+
+    "/api/rooms/:id/end": {
+      POST: requireSession(webAuth, async (req, userId) => {
+        const roomId = roomIdFromPath(req, 2);
+        return requireOwnedRoom(userId, roomId, async (room) => {
+          if (room.status === "ended") return jsonError(400, "room ended");
+          brokerEndRoom(
+            {
+              registry,
+              subscriptions,
+              markEnded: (id) => rooms.end(id),
+              listParticipantUuids: (id) => rooms.listParticipants(id).map((p) => p.agent_uuid),
+            },
+            { id: room.id, name: room.name },
           );
           return Response.json({ room: rooms.get(roomId) });
         });

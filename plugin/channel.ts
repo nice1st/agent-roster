@@ -1,7 +1,7 @@
-import type { MessageEvent, RoomMessageEvent, RoomStartEvent } from "../src/shared/protocol";
+import type { MessageEvent, RoomEndEvent, RoomMessageEvent, RoomStartEvent } from "../src/shared/protocol";
 
-// 인바운드 이벤트 → notifications/claude/channel 페이로드 조립 (message는 계승 형식, room-start·room-message는
-// 05 §2 #13 신규). CC가 params.content와 params.meta 속성으로 <channel .../> 태그를 조립한다 —
+// 인바운드 이벤트 → notifications/claude/channel 페이로드 조립 (message는 계승 형식, room-start·room-message·room-end는
+// 05 §2 #13·#14 신규). CC가 params.content와 params.meta 속성으로 <channel .../> 태그를 조립한다 —
 // content는 본문 그대로, 태그 속성은 meta로 싣는다(태그 문자열을 여기서 미리 감싸면 이중 래핑된다).
 
 export interface ChannelNotification {
@@ -9,11 +9,12 @@ export interface ChannelNotification {
   params: { content: string; meta: Record<string, string> };
 }
 
-/** message·room-start·room-message 이벤트만 알림으로 바꾼다 — 그 외 이벤트는 null. */
+/** message·room-start·room-message·room-end 이벤트만 알림으로 바꾼다 — 그 외 이벤트는 null. */
 export function toChannelNotification(event: unknown): ChannelNotification | null {
   if (isMessageEvent(event)) return messageNotification(event);
   if (isRoomStartEvent(event)) return roomStartNotification(event);
   if (isRoomMessageEvent(event)) return roomMessageNotification(event);
+  if (isRoomEndEvent(event)) return roomEndNotification(event);
   return null;
 }
 
@@ -35,6 +36,15 @@ function roomStartNotification(event: RoomStartEvent): ChannelNotification {
 function roomMessageNotification(event: RoomMessageEvent): ChannelNotification {
   const meta: Record<string, string> = { room_id: event.room, from_id: event.from, sent_at: event.sent_at };
   return { method: "notifications/claude/channel", params: { content: event.message, meta } };
+}
+
+/** room-end의 content는 종료 안내 텍스트(05 §2 #14) — 폭파는 버튼·만료 스위프 어느 쪽이든 같은 형태로 알린다. */
+function roomEndNotification(event: RoomEndEvent): ChannelNotification {
+  const meta: Record<string, string> = { room_id: event.room, sent_at: event.sent_at };
+  return {
+    method: "notifications/claude/channel",
+    params: { content: `room "${event.name}" 이(가) 종료됐다. 더 이상 발언을 받지 않는다.`, meta },
+  };
 }
 
 function isMessageEvent(event: unknown): event is MessageEvent {
@@ -62,5 +72,13 @@ function isRoomMessageEvent(event: unknown): event is RoomMessageEvent {
     typeof e.from === "string" &&
     typeof e.sent_at === "string" &&
     typeof e.message === "string"
+  );
+}
+
+function isRoomEndEvent(event: unknown): event is RoomEndEvent {
+  if (typeof event !== "object" || event === null) return false;
+  const e = event as Partial<RoomEndEvent>;
+  return (
+    e.type === "room-end" && typeof e.room === "string" && typeof e.name === "string" && typeof e.sent_at === "string"
   );
 }

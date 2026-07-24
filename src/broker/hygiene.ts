@@ -1,26 +1,26 @@
 // 연결 위생 설정 — 코드 기본값과 env 오버라이드. 시간·상한은 주입으로 결정론을 확보한다(05 §4).
 
 export interface HygieneConfig {
-  keepaliveIntervalMs: number;
+  heartbeatIntervalMs: number;
   maxConnections: number;
 }
 
 export type HygieneOverrides = Partial<HygieneConfig>;
 
 export const HYGIENE_DEFAULTS: HygieneConfig = {
-  keepaliveIntervalMs: 30_000,
+  heartbeatIntervalMs: 30_000,
   maxConnections: 1_000,
 };
 
 export function resolveHygiene(overrides: HygieneOverrides = {}): HygieneConfig {
   return {
-    keepaliveIntervalMs: overrides.keepaliveIntervalMs ?? HYGIENE_DEFAULTS.keepaliveIntervalMs,
+    heartbeatIntervalMs: overrides.heartbeatIntervalMs ?? HYGIENE_DEFAULTS.heartbeatIntervalMs,
     maxConnections: overrides.maxConnections ?? HYGIENE_DEFAULTS.maxConnections,
   };
 }
 
 const ENV_KEYS: Record<keyof HygieneConfig, string> = {
-  keepaliveIntervalMs: "BROKER_KEEPALIVE_INTERVAL_MS",
+  heartbeatIntervalMs: "BROKER_HEARTBEAT_INTERVAL_MS",
   maxConnections: "BROKER_MAX_CONNECTIONS",
 };
 

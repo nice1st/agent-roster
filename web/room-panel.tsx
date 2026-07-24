@@ -23,6 +23,7 @@ export function RoomPanel({ roomId, roomName, onClose }: RoomPanelProps) {
   const [messages, setMessages] = useState<RoomChatMessage[]>([]);
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [ended, setEnded] = useState(false);
   const sourceRef = useRef<EventSource | null>(null);
   const myUuidRef = useRef<string | null>(null);
 
@@ -67,6 +68,8 @@ export function RoomPanel({ roomId, roomName, onClose }: RoomPanelProps) {
             sentAt: data.sent_at ?? "",
           },
         ]);
+      } else if (data.type === "room-end" && data.room === roomId) {
+        setEnded(true);
       } else if (data.type === "error") {
         setError(data.error ?? "스트림 오류");
       }
@@ -116,6 +119,7 @@ export function RoomPanel({ roomId, roomName, onClose }: RoomPanelProps) {
     <main>
       <h1>room: {roomName}</h1>
       <p role="note">room 대화는 기록됩니다.</p>
+      {ended && <p role="alert">이 room은 종료됐습니다. 더 이상 발언할 수 없습니다.</p>}
       {state === "disconnected" && (
         <p role="alert">
           연결이 끊겼습니다.{" "}
@@ -142,10 +146,10 @@ export function RoomPanel({ roomId, roomName, onClose }: RoomPanelProps) {
         onKeyDown={(e) => {
           if (e.key === "Enter") send();
         }}
-        disabled={myUuid === null}
+        disabled={myUuid === null || ended}
         placeholder="메시지 입력"
       />
-      <button type="button" onClick={send} disabled={myUuid === null}>
+      <button type="button" onClick={send} disabled={myUuid === null || ended}>
         전송
       </button>
 

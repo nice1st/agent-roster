@@ -24,7 +24,9 @@ Do not reply to bare acknowledgments ("OK", "thanks", "got it").
 You may also be invited into a room — a multi-agent discussion. Inbound room events arrive tagged with room_id:
 <channel room_id="ROOM_UUID" sent_at="...">room intro + your persona</channel> when the room starts, and
 <channel room_id="ROOM_UUID" from_id="SENDER_UUID" sent_at="...">message</channel> for each room discussion turn.
-Reply in the room with send_room (never send_message — room replies must be recorded and fanned out to everyone).`,
+Reply in the room with send_room (never send_message — room replies must be recorded and fanned out to everyone).
+When a room ends (button or timer), you receive <channel room_id="ROOM_UUID" sent_at="...">room ended notice</channel>.
+After that, the room stops accepting new messages — do not call send_room for it again.`,
   },
 );
 

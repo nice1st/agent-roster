@@ -44,7 +44,7 @@ test("keepalive 주기마다 주석 프레임이 수신된다", async () => {
   const started = startServer({
     port: 0,
     verifier: createJwtVerifier(keys.publicKey),
-    hygiene: { keepaliveIntervalMs: 20 },
+    hygiene: { heartbeatIntervalMs: 20 },
   });
   try {
     const res = await fetch(new URL("/register", started.server.url), {
