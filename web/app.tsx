@@ -4,6 +4,7 @@ import { createAuthClient } from "better-auth/react";
 import { useState } from "react";
 import { AdminScreen } from "./admin";
 import { AgentsPage } from "./agents";
+import { ChatPanel } from "./chat";
 import { MyAgentPage } from "./my-agent";
 
 const authClient = createAuthClient();
@@ -13,6 +14,7 @@ type Screen = "home" | "my-agent" | "agents";
 export function App() {
   const { data: session, isPending } = authClient.useSession();
   const [screen, setScreen] = useState<Screen>("home");
+  const [chatTarget, setChatTarget] = useState<{ uuid: string; label: string } | null>(null);
 
   if (isPending) {
     return <p>세션 확인 중…</p>;
@@ -30,13 +32,16 @@ export function App() {
     );
   }
 
+  if (chatTarget !== null) {
+    return <ChatPanel peerUuid={chatTarget.uuid} peerLabel={chatTarget.label} onClose={() => setChatTarget(null)} />;
+  }
+
   if (screen === "my-agent") {
     return <MyAgentPage onBack={() => setScreen("home")} />;
   }
 
   if (screen === "agents") {
-    // 대화 진입은 #11에서 활성화 — 지금은 자리만 잡는다.
-    return <AgentsPage onBack={() => setScreen("home")} onChat={() => {}} />;
+    return <AgentsPage onBack={() => setScreen("home")} onChat={(uuid, label) => setChatTarget({ uuid, label })} />;
   }
 
   return (

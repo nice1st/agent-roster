@@ -1,6 +1,6 @@
 import type { TokenVerifier } from "../auth/token";
 import type { BrokerEvent } from "../shared/protocol";
-import type { AgentMeta, Registry } from "./registry";
+import type { AgentMeta, Exposure, Registry } from "./registry";
 import { createSseConnection, sseFrame } from "./sse";
 
 interface RegisterBody {
@@ -11,6 +11,14 @@ interface RegisterBody {
 export interface RegisterDeps {
   registry: Registry;
   verifier: TokenVerifier;
+}
+
+export interface OpenAgentStreamArgs {
+  registry: Registry;
+  owner: string;
+  requestedUuid?: string;
+  meta: AgentMeta;
+  exposure: Exposure;
 }
 
 function jsonError(status: number, error: string): Response {
@@ -34,6 +42,41 @@ async function parseBody(req: Request): Promise<RegisterBody | null> {
   }
 }
 
+/**
+ * uuid 발급/리쥼·소유 검증·연결 상한·SSE 개설·등재·registered 프레임 — regi 코어(01 §3.1).
+ * /register(exposure "follow")와 웹 채팅 스트림(exposure [])이 공유한다(05 §2 #11 이음새).
+ * 호출자는 인증 방식(토큰 vs 세션)만 다르게 검증하고 owner를 확정해 넘긴다.
+ */
+export function openAgentStream(args: OpenAgentStreamArgs): Response {
+  const { registry, owner, requestedUuid, meta, exposure } = args;
+
+  const existing = requestedUuid !== undefined ? registry.get(requestedUuid) : undefined;
+  if (existing !== undefined && existing.owner !== owner) {
+    return jsonError(403, "uuid owned by another user");
+  }
+  // 리쥼(교체)은 총량 불변이라 상한과 무관 — 산 엔트리가 없는 등록만 정원을 본다
+  if (existing === undefined && registry.isFull) return jsonError(503, "broker full");
+
+  const uuid = requestedUuid ?? crypto.randomUUID();
+  const { stream, handle } = createSseConnection({
+    onCancel: (h) => registry.removeIfCurrent(uuid, h),
+  });
+  // 사전 검사와 이 지점 사이(await 경계)의 경합 대비로 register가 소유·정원을 한 번 더 강제한다
+  const result = registry.register({ uuid, owner, exposure, meta, handle });
+  if (result.ok) {
+    handle.send(sseFrame({ type: "registered", uuid } satisfies BrokerEvent));
+  } else {
+    const error = result.reason === "broker-full" ? "broker full" : "uuid owned by another user";
+    handle.send(sseFrame({ type: "error", error } satisfies BrokerEvent));
+    handle.close();
+  }
+
+  return new Response(stream, {
+    headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache" },
+  });
+}
+
+/** /register 어댑터 — JWT 검증 후 코어를 exposure "follow"로 호출한다(01 §3.2 기본 노출: 소유자의 전 그룹 추종). */
 export function createRegisterHandler(deps: RegisterDeps) {
   return async (req: Request): Promise<Response> => {
     const token = bearerToken(req);
@@ -44,35 +87,12 @@ export function createRegisterHandler(deps: RegisterDeps) {
     const body = await parseBody(req);
     if (body === null) return jsonError(400, "malformed body");
 
-    const existing = body.uuid !== undefined ? deps.registry.get(body.uuid) : undefined;
-    if (existing !== undefined && existing.owner !== auth.userId) {
-      return jsonError(403, "uuid owned by another user");
-    }
-    // 리쥼(교체)은 총량 불변이라 상한과 무관 — 산 엔트리가 없는 등록만 정원을 본다
-    if (existing === undefined && deps.registry.isFull) return jsonError(503, "broker full");
-
-    const uuid = body.uuid ?? crypto.randomUUID();
-    const { stream, handle } = createSseConnection({
-      onCancel: (h) => deps.registry.removeIfCurrent(uuid, h),
-    });
-    // 사전 검사와 이 지점 사이(await 경계)의 경합 대비로 register가 소유·정원을 한 번 더 강제한다
-    const result = deps.registry.register({
-      uuid,
+    return openAgentStream({
+      registry: deps.registry,
       owner: auth.userId,
-      exposure: "follow",
+      requestedUuid: body.uuid,
       meta: body.meta ?? {},
-      handle,
-    });
-    if (result.ok) {
-      handle.send(sseFrame({ type: "registered", uuid } satisfies BrokerEvent));
-    } else {
-      const error = result.reason === "broker-full" ? "broker full" : "uuid owned by another user";
-      handle.send(sseFrame({ type: "error", error } satisfies BrokerEvent));
-      handle.close();
-    }
-
-    return new Response(stream, {
-      headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache" },
+      exposure: "follow",
     });
   };
 }

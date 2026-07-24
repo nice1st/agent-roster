@@ -1,5 +1,5 @@
 // 에이전트 목록 화면(03 §2 "에이전트 목록") — 사용자가 속한 그룹들에 노출된 접속 중 에이전트의 모니터.
-// 수동 새로고침만 한다(실시간 갱신 방식은 03 §4 미정). 행마다 "대화" 버튼은 #11에서 활성화한다.
+// 수동 새로고침만 한다(실시간 갱신 방식은 03 §4 미정). 행마다 "대화" 버튼은 #11에서 활성화됨.
 import { useState } from "react";
 
 interface AgentMeta {
@@ -17,7 +17,7 @@ interface AgentListItem {
 
 export interface AgentsPageProps {
   onBack: () => void;
-  onChat: (uuid: string) => void;
+  onChat: (uuid: string, label: string) => void;
 }
 
 async function getJson<T>(url: string): Promise<T> {
@@ -72,7 +72,7 @@ export function AgentsPage({ onBack, onChat }: AgentsPageProps) {
               <td>{a.owner.email}</td>
               <td>{a.uuid}</td>
               <td>
-                <button type="button" onClick={() => onChat(a.uuid)}>
+                <button type="button" onClick={() => onChat(a.uuid, a.meta.alias ?? a.owner.email)}>
                   대화
                 </button>
               </td>

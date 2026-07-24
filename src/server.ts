@@ -1,5 +1,6 @@
 import type { HTMLBundle } from "bun";
 import { createAgentsApiRoutes } from "./api/agents";
+import { createChatApiRoutes } from "./api/chat";
 import type { TokenVerifier } from "./auth/token";
 import type { WebAuth } from "./auth/web-auth";
 import { createGroupsHandler, createPeersHandler, createSetGroupsHandler } from "./broker/discovery";
@@ -29,6 +30,8 @@ export interface ServerConfig {
    * startServer 안에서 생성되므로 미리 만든 라우트 맵을 주입할 수 없다).
    */
   agentsDeps?: { webAuth: WebAuth; getUserGroups(userId: string): Group[] };
+  /** 없으면 /api/chat/stream을 마운트하지 않는다(05 §2 #11) — agentsDeps와 동일한 이유로 registry 의존. */
+  chatDeps?: { webAuth: WebAuth };
 }
 
 type RouteHandler = (req: Request) => Response | Promise<Response>;
@@ -67,6 +70,10 @@ export function startServer(config: ServerConfig) {
       routes,
       createAgentsApiRoutes({ webAuth: agentsDeps.webAuth, registry, getUserGroups: agentsDeps.getUserGroups }),
     );
+  }
+  const chatDeps = config.chatDeps;
+  if (chatDeps !== undefined) {
+    Object.assign(routes, createChatApiRoutes({ webAuth: chatDeps.webAuth, registry }));
   }
 
   const server = Bun.serve({
