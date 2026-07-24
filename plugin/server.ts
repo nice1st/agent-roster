@@ -8,10 +8,10 @@ import { toChannelNotification } from "./channel";
 import { ENV_BROKER_TOKEN, ENV_BROKER_URL } from "./env";
 
 const mcp = new Server(
-  { name: "agent-orchestra-channel", version: "0.0.1" },
+  { name: "agent-roster-channel", version: "0.0.1" },
   {
     capabilities: { experimental: { "claude/channel": {} }, tools: {} },
-    instructions: `This session is an agent on the agent-orchestra broker: other agents can message you by UUID.
+    instructions: `This session is an agent on the agent-roster broker: other agents can message you by UUID.
 
 Inbound 1:1 messages arrive as:
 <channel from_id="SENDER_UUID" sent_at="..." [skill="SKILL_NAME"]>
@@ -146,7 +146,7 @@ export async function handleRegister(args: { alias?: string; status?: string }) 
             params: {
               content:
                 "브로커와의 연결이 끊겼다. register를 다시 실행하면 보관된 UUID로 복귀를 시도한다. 사용자에게 이 사실을 알려라.",
-              meta: { source: "agent-orchestra-system", sent_at: new Date().toISOString() },
+              meta: { source: "agent-roster-system", sent_at: new Date().toISOString() },
             },
           })
           .catch(() => {});

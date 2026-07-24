@@ -40,5 +40,5 @@ if (import.meta.main) {
     chatDeps: { webAuth },
     roomsDeps: { webAuth, rooms, getUserGroups: (userId) => groups.getGroupsForUser(userId) },
   });
-  console.log(`agent-orchestra listening on ${server.url}`);
+  console.log(`agent-roster listening on ${server.url}`);
 }

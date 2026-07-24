@@ -26,7 +26,7 @@ export function App() {
   if (session === null) {
     return (
       <main>
-        <h1>agent-orchestra</h1>
+        <h1>agent-roster</h1>
         <p>초대된 계정만 로그인할 수 있다.</p>
         <button type="button" onClick={() => authClient.signIn.social({ provider: "google" })}>
           Google로 로그인
@@ -69,7 +69,7 @@ export function App() {
 
   return (
     <main>
-      <h1>agent-orchestra</h1>
+      <h1>agent-roster</h1>
       <p>{session.user.email}</p>
       <button type="button" onClick={() => setScreen("my-agent")}>
         내 에이전트

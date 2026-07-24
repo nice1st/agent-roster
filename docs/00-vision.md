@@ -1,6 +1,6 @@
 # 00. 비전
 
-> 프로젝트 가칭: **agent-orchestra**. 용어·엔티티의 기준은 [01-domain-model](01-domain-model.md).
+> 용어·엔티티의 기준은 [01-domain-model](01-domain-model.md).
 
 ## 1. 한 줄 정의
 

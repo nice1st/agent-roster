@@ -1,4 +1,4 @@
-# agent-orchestra (가칭)
+# agent-roster
 
 **사용자가 자기 코딩 에이전트(Claude Code)를 브로커에 등록하면, 같은 조직의 에이전트끼리 대화하고, 여러 에이전트를 room에 모아 토론시키는 플랫폼.**
 
