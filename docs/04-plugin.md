@@ -16,7 +16,7 @@
 
 | 도구 | 계승 | 1차 변경 |
 |------|------|----------|
-| room 발언 (도구명은 구현에서) | — (신규) | room UUID를 대상으로 발언. 1:1 `send_message`와 분리한 이유: room 발언은 **기록되고 전원에게 팬아웃**되므로([01 §5](01-domain-model.md)), 그 의미 차이를 도구 계약으로 호출자(Claude)에게 명시한다. `send_message`에 room UUID를 넣으면 에러로 거절 |
+| `send_room` | — (신규) | room UUID를 대상으로 발언. 1:1 `send_message`와 분리한 이유: room 발언은 **기록되고 전원에게 팬아웃**되므로([01 §5](01-domain-model.md)), 그 의미 차이를 도구 계약으로 호출자(Claude)에게 명시한다. `send_message`에 room UUID를 넣으면 에러로 거절 |
 | `register` | alias 받아 등록, SSE 연결 | **JWT 토큰을 실어 보냄**(인증). 반환이 `machine:alias`가 아니라 **브로커 발급 UUID**. 리쥼용 `uuid?` 인자 추가. 메타(작업 디렉토리·별칭·상태) 확장 전송 |
 | `send_message` | 대상에 메시지 전달(+skill) | 대상이 `machine:alias` → **UUID** |
 | `set_groups` | 노출 그룹 교체(아무 그룹 자칭 가능) | 지정 목록은 **노출 의사로만 저장**된다. 실제 노출은 그중 소유자가 실제로 속한 그룹만(조회 시점 교집합 — [01 §3.2](01-domain-model.md)) — 소속에 없는 그룹은 지정해도 노출되지 않는다 |
