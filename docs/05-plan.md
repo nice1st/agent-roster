@@ -24,8 +24,8 @@
 | ✅ 5 | B 인증 | Google 로그인 + 초대 게이트 | | | O | O | O | O |
 | ✅ 6 | B | 토큰 발급 (내 에이전트 화면) + 브로커 실키 검증 전환 | O | | O | O | O | |
 | ✅ 7 | B | 사용자·그룹 관리 (관리자 화면) | | | O | O | O | O |
-| 8 | C 발견 | peers·set_groups·list_groups (교집합 판정) | O | O | | | | O |
-| 9 | C | 메타 갱신 (set_summary 일반화) | O | O | | | | |
+| ✅ 8 | C 발견 | peers·set_groups·list_groups (교집합 판정) | O | O | | | | O |
+| ✅ 9 | C | 메타 갱신 (set_summary 일반화) | O | O | | | | |
 | 10 | D 웹 | 에이전트 목록 (user 스코프 모니터) | O | | | O | O | O |
 | 11 | D | 웹 1:1 대화 (노출 없는 웹 세션 등재) | O | | | O | O | |
 | 12 | E room | room 생성·참여자 배치·시작 | O | | | O | O | O |

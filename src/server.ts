@@ -7,6 +7,7 @@ import { startKeepalive } from "./broker/keepalive";
 import { createRegisterHandler } from "./broker/register";
 import { Registry } from "./broker/registry";
 import { createSendHandler } from "./broker/send";
+import { createSetMetaHandler } from "./broker/set-meta";
 import type { Group } from "./store/groups";
 
 export interface ServerConfig {
@@ -31,12 +32,14 @@ export function startServer(config: ServerConfig) {
   const registry = new Registry(hygiene.maxConnections);
   const register = createRegisterHandler({ registry, verifier: config.verifier });
   const send = createSendHandler({ registry });
+  const setMeta = createSetMetaHandler({ registry });
   startKeepalive(registry, hygiene.keepaliveIntervalMs);
 
   const routes: Record<string, RouteValue> = {
     "/health": () => Response.json({ ok: true }),
     "/register": { POST: register },
     "/send": { POST: send },
+    "/set-meta": { POST: setMeta },
     ...config.webRoutes,
     ...config.adminRoutes,
   };

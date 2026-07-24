@@ -81,6 +81,17 @@ mcp.setRequestHandler(ListToolsRequestSchema, () => ({
         "Show your current group memberships, your exposure setting, and which groups you're actually exposed to.",
       inputSchema: { type: "object" as const, properties: {} },
     },
+    {
+      name: "set_meta",
+      description: "Update your displayed alias and/or status. Fields you omit are left unchanged.",
+      inputSchema: {
+        type: "object" as const,
+        properties: {
+          alias: { type: "string" as const, description: "Display name shown to peers" },
+          status: { type: "string" as const, description: "One-line status shown to peers" },
+        },
+      },
+    },
   ],
 }));
 
@@ -262,6 +273,40 @@ async function handleListGroups() {
   }
 }
 
+async function handleSetMeta(args: { alias?: string; status?: string }) {
+  if (storedUuid === undefined) {
+    return textResult("Not registered. Call register first.", true);
+  }
+  if (args.alias !== undefined && typeof args.alias !== "string") {
+    return textResult("alias must be a string.", true);
+  }
+  if (args.status !== undefined && typeof args.status !== "string") {
+    return textResult("status must be a string.", true);
+  }
+  const brokerUrl = process.env[ENV_BROKER_URL];
+  if (brokerUrl === undefined) {
+    return textResult(`${ENV_BROKER_URL} 환경변수가 필요하다`, true);
+  }
+
+  try {
+    const res = await fetch(new URL("/set-meta", brokerUrl), {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ from: storedUuid, alias: args.alias, status: args.status }),
+    });
+    if (!res.ok) {
+      return textResult(`set_meta failed: ${res.status} ${await res.text()}`.trim(), true);
+    }
+    const result = (await res.json()) as { ok: boolean; error?: string };
+    if (!result.ok) {
+      return textResult(`set_meta rejected: ${result.error}`, true);
+    }
+    return textResult("Meta updated.");
+  } catch (e) {
+    return textResult(`set_meta failed: ${e instanceof Error ? e.message : String(e)}`, true);
+  }
+}
+
 mcp.setRequestHandler(CallToolRequestSchema, async (req) => {
   const args = req.params.arguments ?? {};
   switch (req.params.name) {
@@ -275,6 +320,8 @@ mcp.setRequestHandler(CallToolRequestSchema, async (req) => {
       return handleSetGroups(args as { groups?: string[] });
     case "list_groups":
       return handleListGroups();
+    case "set_meta":
+      return handleSetMeta(args as { alias?: string; status?: string });
     default:
       throw new Error(`unknown tool: ${req.params.name}`);
   }
