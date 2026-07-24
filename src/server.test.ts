@@ -17,3 +17,8 @@ test("인증 미구성 서버는 /api/auth가 404다", async () => {
   const res = await fetch(new URL("/api/auth/get-session", server.url));
   expect(res.status).toBe(404);
 });
+
+test("groupsDeps 미구성 서버는 /peers가 404다", async () => {
+  const res = await fetch(new URL("/peers", server.url), { method: "POST", body: "{}" });
+  expect(res.status).toBe(404);
+});

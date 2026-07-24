@@ -1,11 +1,13 @@
 import type { HTMLBundle } from "bun";
 import type { TokenVerifier } from "./auth/token";
 import type { WebAuth } from "./auth/web-auth";
+import { createGroupsHandler, createPeersHandler, createSetGroupsHandler } from "./broker/discovery";
 import { type HygieneOverrides, resolveHygiene } from "./broker/hygiene";
 import { startKeepalive } from "./broker/keepalive";
 import { createRegisterHandler } from "./broker/register";
 import { Registry } from "./broker/registry";
 import { createSendHandler } from "./broker/send";
+import type { Group } from "./store/groups";
 
 export interface ServerConfig {
   port: number;
@@ -17,6 +19,8 @@ export interface ServerConfig {
   webRoutes?: Record<string, HTMLBundle>;
   /** 관리자 API 라우트(src/api/admin.ts가 조합해 export) — 없으면 마운트하지 않는다. */
   adminRoutes?: Record<string, Partial<Record<"GET" | "POST" | "DELETE", RouteHandler>>>;
+  /** 없으면 /peers·/set-groups·/groups를 마운트하지 않는다(05 §2 #8 — 그룹 조회 의존성은 선택). */
+  groupsDeps?: { getUserGroups(userId: string): Group[] };
 }
 
 type RouteHandler = (req: Request) => Response | Promise<Response>;
@@ -39,6 +43,13 @@ export function startServer(config: ServerConfig) {
   const webAuth = config.webAuth;
   if (webAuth !== undefined) {
     routes["/api/auth/*"] = (req) => webAuth.handler(req);
+  }
+  const groupsDeps = config.groupsDeps;
+  if (groupsDeps !== undefined) {
+    const discoveryDeps = { registry, getUserGroups: groupsDeps.getUserGroups };
+    routes["/peers"] = { POST: createPeersHandler(discoveryDeps) };
+    routes["/set-groups"] = { POST: createSetGroupsHandler(discoveryDeps) };
+    routes["/groups"] = { POST: createGroupsHandler(discoveryDeps) };
   }
 
   const server = Bun.serve({

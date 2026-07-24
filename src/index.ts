@@ -5,6 +5,7 @@ import { type AuthEnv, authEnvFrom, createWebAuth } from "./auth/web-auth";
 import { hygieneFromEnv } from "./broker/hygiene";
 import { startServer } from "./server";
 import { openBrokerDatabase } from "./store/db";
+import { createGroupStore } from "./store/groups";
 import { runDomainMigrations } from "./store/migrations";
 
 if (import.meta.main) {
@@ -24,6 +25,7 @@ if (import.meta.main) {
   });
   // 브로커 검증기의 키 출처 = 같은 프로세스의 Better Auth JWKS(부팅 시 1회 로드) — 키 회전은 재기동 전제(01 §3.1).
   const verifier = await createJwksVerifierFromWebAuth(webAuth);
+  const groups = createGroupStore(db);
   const { server } = startServer({
     port: 3000,
     verifier,
@@ -31,6 +33,7 @@ if (import.meta.main) {
     webAuth,
     webRoutes: { "/": webIndex },
     adminRoutes: createAdminApiRoutes({ webAuth, db }),
+    groupsDeps: { getUserGroups: (userId) => groups.getGroupsForUser(userId) },
   });
   console.log(`agent-orchestra listening on ${server.url}`);
 }

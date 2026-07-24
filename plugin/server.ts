@@ -58,6 +58,29 @@ mcp.setRequestHandler(ListToolsRequestSchema, () => ({
         required: ["to_id", "message"],
       },
     },
+    {
+      name: "list_peers",
+      description: "List agents currently visible to you (same group exposure). Shows uuid, alias, and status.",
+      inputSchema: { type: "object" as const, properties: {} },
+    },
+    {
+      name: "set_groups",
+      description:
+        "Narrow which groups you're exposed to. Groups you're not actually a member of are silently filtered out. There is no way to switch back to following all your groups — re-register to get that again.",
+      inputSchema: {
+        type: "object" as const,
+        properties: {
+          groups: { type: "array" as const, items: { type: "string" as const }, description: "Group IDs to expose to" },
+        },
+        required: ["groups"],
+      },
+    },
+    {
+      name: "list_groups",
+      description:
+        "Show your current group memberships, your exposure setting, and which groups you're actually exposed to.",
+      inputSchema: { type: "object" as const, properties: {} },
+    },
   ],
 }));
 
@@ -136,6 +159,109 @@ async function handleSendMessage(args: { to_id?: string; message?: string; skill
   }
 }
 
+async function handleListPeers() {
+  if (storedUuid === undefined) {
+    return textResult("Not registered. Call register first.", true);
+  }
+  const brokerUrl = process.env[ENV_BROKER_URL];
+  if (brokerUrl === undefined) {
+    return textResult(`${ENV_BROKER_URL} 환경변수가 필요하다`, true);
+  }
+
+  try {
+    const res = await fetch(new URL("/peers", brokerUrl), {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ from: storedUuid }),
+    });
+    if (!res.ok) {
+      return textResult(`list_peers failed: ${res.status} ${await res.text()}`.trim(), true);
+    }
+    const result = (await res.json()) as {
+      ok: boolean;
+      error?: string;
+      peers?: { uuid: string; meta: { alias?: string; status?: string } }[];
+    };
+    if (!result.ok) {
+      return textResult(`list_peers rejected: ${result.error}`, true);
+    }
+    const peers = result.peers ?? [];
+    if (peers.length === 0) return textResult("No peers visible.");
+    const lines = peers.map((p) => `${p.uuid}  alias=${p.meta.alias ?? "-"}  status=${p.meta.status ?? "-"}`);
+    return textResult(lines.join("\n"));
+  } catch (e) {
+    return textResult(`list_peers failed: ${e instanceof Error ? e.message : String(e)}`, true);
+  }
+}
+
+async function handleSetGroups(args: { groups?: string[] }) {
+  if (storedUuid === undefined) {
+    return textResult("Not registered. Call register first.", true);
+  }
+  if (!Array.isArray(args.groups) || !args.groups.every((g) => typeof g === "string")) {
+    return textResult("groups must be an array of strings.", true);
+  }
+  const brokerUrl = process.env[ENV_BROKER_URL];
+  if (brokerUrl === undefined) {
+    return textResult(`${ENV_BROKER_URL} 환경변수가 필요하다`, true);
+  }
+
+  try {
+    const res = await fetch(new URL("/set-groups", brokerUrl), {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ from: storedUuid, groups: args.groups }),
+    });
+    if (!res.ok) {
+      return textResult(`set_groups failed: ${res.status} ${await res.text()}`.trim(), true);
+    }
+    const result = (await res.json()) as { ok: boolean; error?: string };
+    if (!result.ok) {
+      return textResult(`set_groups rejected: ${result.error}`, true);
+    }
+    return textResult("Groups updated.");
+  } catch (e) {
+    return textResult(`set_groups failed: ${e instanceof Error ? e.message : String(e)}`, true);
+  }
+}
+
+async function handleListGroups() {
+  if (storedUuid === undefined) {
+    return textResult("Not registered. Call register first.", true);
+  }
+  const brokerUrl = process.env[ENV_BROKER_URL];
+  if (brokerUrl === undefined) {
+    return textResult(`${ENV_BROKER_URL} 환경변수가 필요하다`, true);
+  }
+
+  try {
+    const res = await fetch(new URL("/groups", brokerUrl), {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ from: storedUuid }),
+    });
+    if (!res.ok) {
+      return textResult(`list_groups failed: ${res.status} ${await res.text()}`.trim(), true);
+    }
+    const result = (await res.json()) as {
+      ok: boolean;
+      error?: string;
+      member_of?: { id: string; name: string }[];
+      exposure?: "follow" | string[];
+      exposed?: string[];
+    };
+    if (!result.ok) {
+      return textResult(`list_groups rejected: ${result.error}`, true);
+    }
+    const memberOf = (result.member_of ?? []).map((g) => `${g.id} (${g.name})`).join(", ") || "-";
+    const exposure = result.exposure === "follow" ? "follow" : `[${(result.exposure ?? []).join(", ")}]`;
+    const exposed = (result.exposed ?? []).join(", ") || "-";
+    return textResult(`member_of: ${memberOf}\nexposure: ${exposure}\nexposed: ${exposed}`);
+  } catch (e) {
+    return textResult(`list_groups failed: ${e instanceof Error ? e.message : String(e)}`, true);
+  }
+}
+
 mcp.setRequestHandler(CallToolRequestSchema, async (req) => {
   const args = req.params.arguments ?? {};
   switch (req.params.name) {
@@ -143,6 +269,12 @@ mcp.setRequestHandler(CallToolRequestSchema, async (req) => {
       return handleRegister(args as { alias?: string; status?: string });
     case "send_message":
       return handleSendMessage(args as { to_id?: string; message?: string; skill?: string });
+    case "list_peers":
+      return handleListPeers();
+    case "set_groups":
+      return handleSetGroups(args as { groups?: string[] });
+    case "list_groups":
+      return handleListGroups();
     default:
       throw new Error(`unknown tool: ${req.params.name}`);
   }

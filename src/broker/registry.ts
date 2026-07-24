@@ -68,4 +68,20 @@ export class Registry {
     this.entries.delete(uuid);
     return true;
   }
+
+  /** set_groups용 — 노출 의사만 덮어쓴다(01 §3.2). 엔트리가 없으면 false. */
+  setExposure(uuid: string, exposure: Exposure): boolean {
+    const existing = this.entries.get(uuid);
+    if (existing === undefined) return false;
+    existing.exposure = exposure;
+    return true;
+  }
+
+  /** set_meta용 — 준 필드만 병합하고 나머지는 유지한다(슬라이스 9). 엔트리가 없으면 false. */
+  mergeMeta(uuid: string, patch: Partial<AgentMeta>): boolean {
+    const existing = this.entries.get(uuid);
+    if (existing === undefined) return false;
+    existing.meta = { ...existing.meta, ...patch };
+    return true;
+  }
 }

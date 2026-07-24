@@ -42,6 +42,15 @@ export function createGroupStore(db: Database) {
         .map((r) => r.group_id);
     },
 
+    /** userId의 현재 소속을 {id,name}으로 돌려준다(발견 판정·list_groups 표시용, 01 §3.2). */
+    getGroupsForUser(userId: string): Group[] {
+      return db
+        .query<Group, [string]>(
+          "SELECT g.id AS id, g.name AS name FROM groups g JOIN user_groups ug ON ug.group_id = g.id WHERE ug.user_id = ? ORDER BY g.name",
+        )
+        .all(userId);
+    },
+
     /** user_group 부여 — 이미 있으면 조용히 무시(중복 부여는 무해). */
     grant(userId: string, groupId: string): void {
       db.prepare("INSERT OR IGNORE INTO user_groups (user_id, group_id) VALUES (?, ?)").run(userId, groupId);
