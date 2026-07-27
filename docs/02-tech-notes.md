@@ -4,7 +4,7 @@
 > 검증 수준: **실행**(직접 실행 확인) > **원문**(라이브러리 소스·공식 문서) > **추정**(요약 기반 — 구현 시 재확인).
 > 검증 시점: 2026-07.
 
-## 1. 에이전트 3종 프로그래밍 구동 (OpenCode·Codex는 1차 범위 밖 — [00 §6](00-vision.md))
+## 1. 에이전트 3종 프로그래밍 구동 (OpenCode·Codex는 범위 밖 — [architecture §6](architecture.md))
 
 세 도구 모두 "프롬프트가 들어와야 턴이 돈다". 턴 종료를 아는 방법이 전부 다르므로 어댑터 정규화의 핵심은 이 표다:
 
@@ -56,12 +56,12 @@
 
 - jwt 플러그인은 서명된 JWT를 발급하고 공개키를 `/api/auth/jwks`로 노출 — **검증에 DB 조회·추가 API 호출 불필요**(공식 문서 명시).
 - `definePayload`로 클레임 구성(user id·email 등), `expirationTime`·`issuer`·`audience`·`getSubject` 설정 가능.
-- 토큰 발급 경로는 세션이 있는 요청 — "사용자가 웹(로그인 상태)에서 직접 토큰 생성"([00 §3](00-vision.md)) 흐름과 맞물림.
+- 토큰 발급 경로는 세션이 있는 요청 — "사용자가 웹(로그인 상태)에서 직접 토큰 생성"([README 사용 흐름](../README.md)) 흐름과 맞물림.
 - 플러그인 공식 용도가 "세션 대체가 아니라 외부 서비스용 토큰" — regi 1회 인증이라는 용도와 부합.
 
 ### 초대 게이트 — 원문 검증
 
-[00 §3](00-vision.md)의 "초대된 계정만 로그인 통과"를 옵션 조합으로 지원:
+[README 사용 흐름](../README.md)의 "초대된 계정만 로그인 통과"를 옵션 조합으로 지원:
 
 - 소셜 프로바이더별 `disableSignUp: true` = 신규 가입 하드 차단. `disableImplicitSignUp: true` = `requestSignUp` 명시 요청 시에만 생성. 세 OAuth 경로(빌트인 callback·generic OAuth·idToken)에 동일 로직(소스 확인).
 - admin 플러그인 `createUser`로 관리자가 email 지정해 사용자 생성. password는 1.6.23 기준 선택 인자(실측 — 공식 문서의 필수 표기와 다름).
