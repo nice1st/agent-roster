@@ -1,5 +1,3 @@
-// send_room 도구 동작 테스트(05 §2 #13) — 실서버(startServer)를 띄우고 실제 register → send_room을 태운다
-// (broker-client.test.ts와 동일한 동작 테스트 규범, 05 §4). room을 active로 만들기 위해 rooms store를 직접 조작한다.
 import { Database } from "bun:sqlite";
 import { afterEach, beforeEach, expect, test } from "bun:test";
 import { type Es256KeyPair, generateEs256KeyPair, signToken } from "../src/auth/keys";

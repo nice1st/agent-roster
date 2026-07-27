@@ -1,6 +1,3 @@
-// 내 에이전트 화면(05 §2 #6, #10) — 로그인 상태에서 브로커 regi용 토큰을 발급하고, 접속 중인 내 에이전트 목록을 본다.
-// jwt 플러그인의 토큰 엔드포인트(GET /api/auth/token, 세션 필요)를 authClient.token()으로 호출한다.
-
 import { jwtClient } from "better-auth/client/plugins";
 import { createAuthClient } from "better-auth/react";
 import { useEffect, useState } from "react";

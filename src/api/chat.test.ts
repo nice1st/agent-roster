@@ -1,5 +1,3 @@
-// GET /api/chat/stream 동작 테스트(05 §2 #11). 세션은 admin.test.ts와 같은 방식(signUpEmail 실제 호출)으로 만든다.
-// 이 스트림은 register 코어(openAgentStream)를 exposure []로 태우므로 프레임 형식은 register.test.ts와 동일.
 import { Database } from "bun:sqlite";
 import { afterEach, beforeEach, expect, test } from "bun:test";
 import { betterAuth } from "better-auth";
@@ -17,7 +15,6 @@ interface TestUser {
   cookie: string;
 }
 
-/** admin.test.ts와 동일한 테스트 전용 세션 생성 방식 — signUpEmail로 실제 세션·쿠키를 받는다. */
 async function createSessionUser(db: Database, email: string): Promise<TestUser> {
   const signupAuth = betterAuth({
     database: db,
@@ -98,7 +95,6 @@ test("스트림을 열면 registered 프레임이 오고 그 엔트리는 어떤
   expect(frame.type).toBe("registered");
   expect(typeof frame.uuid).toBe("string");
 
-  // 같은 그룹의 다른(가상의) 뷰어라도 웹 세션은 exposure []라 보이지 않아야 한다 — /peers로 직접 확인.
   const peersRes = await fetch(new URL("/peers", started.server.url), {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -122,12 +118,10 @@ test("웹 uuid로 보낸 메시지가 상대에게 도착하고 상대가 보낸
   const webStream = await readFirstFrame(await chatStream(webUser.cookie));
   const webUuid = webStream.frame.uuid as string;
 
-  // 상대편 에이전트는 같은 웹 스트림 엔드포인트로 또 하나 열어 시뮬레이션(별도 user).
   const peerUser = await createSessionUser(db, "peer-user@example.com");
   const peerStream = await readFirstFrame(await chatStream(peerUser.cookie));
   const peerUuid = peerStream.frame.uuid as string;
 
-  // 웹 → peer로 발신 (POST /send, from = 웹 uuid) — 기존 발신 엔드포인트 그대로.
   const sendRes = await fetch(new URL("/send", started.server.url), {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -146,7 +140,6 @@ test("웹 uuid로 보낸 메시지가 상대에게 도착하고 상대가 보낸
   };
   expect(received).toEqual({ type: "message", from: webUuid, message: "hello from web", sent_at: expect.any(String) });
 
-  // peer → 웹으로 발신 — 웹 스트림에 도착.
   const replyRes = await fetch(new URL("/send", started.server.url), {
     method: "POST",
     headers: { "content-type": "application/json" },

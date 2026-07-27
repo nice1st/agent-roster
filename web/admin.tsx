@@ -1,4 +1,3 @@
-// 관리자 화면(03 §2 사용자·그룹 관리) — 사용자 목록(생성·삭제·그룹 부여회수), 그룹 목록(생성·삭제), 초대 안내 복사.
 import { useEffect, useState } from "react";
 
 interface AdminUser {

@@ -1,6 +1,3 @@
-// room 대화·기록 화면(03 §2 "room", 05 §2 #13·#15). active room은 GET /api/rooms/:id/messages로 기존 기록을
-// 백필한 뒤 /api/chat/stream(SSE)을 열어 실시간 이어붙임(프레임의 room 필드로 구분), watch로 room-message를 받는다.
-// 입력창으로 /room-send(from=웹 uuid). ended room은 SSE 연결 없이 참여자 + 발언 로그만 조회한다(01 §5 기록 보존).
 import { useEffect, useRef, useState } from "react";
 
 interface RoomChatMessage {
@@ -20,7 +17,6 @@ interface RoomParticipantItem {
 export interface RoomPanelProps {
   roomId: string;
   roomName: string;
-  /** 목록 화면에서 넘어온 room 상태 — ended면 SSE를 열지 않고 기록 조회만 한다(05 §2 #15). */
   initialStatus: "active" | "ended";
   onClose: () => void;
 }
@@ -119,7 +115,6 @@ export function RoomPanel({ roomId, roomName, initialStatus, onClose }: RoomPane
         if (cancelled) return;
         setMessages(backfill.messages);
         setParticipants(backfill.participants);
-        // 백필 이후에만 SSE를 연다 — active room만, ended면 기록 조회로 끝낸다(05 §2 #15).
         if (initialStatus === "active") connect();
       })
       .catch((e) => setError(e instanceof Error ? e.message : String(e)));

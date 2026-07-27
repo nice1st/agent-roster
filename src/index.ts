@@ -24,7 +24,6 @@ if (import.meta.main) {
     secret: authEnv.secret,
     google: { clientId: authEnv.googleClientId, clientSecret: authEnv.googleClientSecret },
   });
-  // 브로커 검증기의 키 출처 = 같은 프로세스의 Better Auth JWKS(부팅 시 1회 로드) — 키 회전은 재기동 전제(01 §3.1).
   const verifier = await createJwksVerifierFromWebAuth(webAuth);
   const groups = createGroupStore(db);
   const rooms = createRoomStore(db);

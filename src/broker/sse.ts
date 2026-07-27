@@ -1,6 +1,6 @@
 import type { ConnectionHandle } from "./registry";
 
-// SSE 프레임 직렬화 — 계승 형식: event: 필드 없이 data의 type으로 구분.
+// event: 필드 없이 data만 쓴다 — 웹 EventSource가 기본 message 이벤트로 받는 전제.
 export function sseFrame(data: unknown): string {
   return `data: ${JSON.stringify(data)}\n\n`;
 }
@@ -11,8 +11,7 @@ export interface SseConnectionOptions {
   onCancel: (handle: ConnectionHandle) => void;
 }
 
-// 미전송 큐 상한은 두지 않는다 — Bun이 소켓 backpressure를 유저스페이스에 전파하지 않아
-// 밀린 양을 측정할 수 없다(02 §3 실행 검증). 죽은 연결은 keepalive 실패·cancel로 회수된다.
+// 미전송 큐 상한은 두지 않는다 — Bun이 소켓 backpressure를 유저스페이스에 전파하지 않아 밀린 양을 측정할 수 없다.
 export function createSseConnection(options: SseConnectionOptions): {
   stream: ReadableStream<Uint8Array>;
   handle: ConnectionHandle;

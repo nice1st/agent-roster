@@ -1,5 +1,3 @@
-// room API 동작 테스트(05 §2 #12). 세션은 admin.test.ts와 같은 방식(signUpEmail), 에이전트 접속은
-// agents.test.ts와 같은 방식(JWT로 /register, registered 프레임에서 uuid 추출)으로 만든다.
 import { Database } from "bun:sqlite";
 import { afterEach, beforeEach, expect, test } from "bun:test";
 import { betterAuth } from "better-auth";
@@ -20,7 +18,6 @@ interface TestUser {
   cookie: string;
 }
 
-/** admin.test.ts와 동일한 테스트 전용 세션 생성 방식 — signUpEmail로 실제 세션·쿠키를 받는다. */
 async function createSessionUser(db: Database, email: string): Promise<TestUser> {
   const signupAuth = betterAuth({
     database: db,
@@ -68,7 +65,6 @@ afterEach(() => {
   started.server.stop(true);
 });
 
-/** register.test.ts와 같은 방식으로 등재하고, 이후 프레임을 순서대로 꺼낼 수 있는 핸들을 돌려준다. */
 async function registerAgent(userId: string, alias?: string) {
   const res = await fetch(new URL("/register", started.server.url), {
     method: "POST",
@@ -246,7 +242,7 @@ test("버튼 폭파 시 참여자·구독자에게 room-end가 가고 상태가 
   await api(`/api/rooms/${room.id}/start`, owner.cookie, jsonInit("POST", {}));
   await agent1.nextFrame(); // room-start 소비
 
-  // 구독자(웹 세션)도 room-end를 받는지 확인 — register 코어로 웹 세션과 동일한 exposure [] 엔트리를 흉내낸다.
+  // register 엔드포인트로 웹 세션과 동일한 엔트리를 흉내내 구독자를 만든다.
   const webRes = await fetch(new URL("/register", started.server.url), {
     method: "POST",
     headers: { authorization: `Bearer ${await signToken(keys.privateKey, owner.id)}` },
@@ -313,7 +309,6 @@ function roomSend(body: unknown): Promise<Response> {
   });
 }
 
-/** owner 세션 + 참여자 한 명이 배치되고 active인 room을 만들어 돌려준다(room-send.test.ts와 동일 패턴). */
 async function setUpActiveRoomWithMessages(messageCount: number) {
   const owner = await createSessionUser(db, `msg-owner-${crypto.randomUUID()}@example.com`);
   const agentOwner = await createSessionUser(db, `msg-agent-${crypto.randomUUID()}@example.com`);

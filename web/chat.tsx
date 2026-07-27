@@ -1,7 +1,4 @@
-// 1:1 대화 패널(03 §2 "1:1 대화", 05 §2 #11) — 목록의 "대화" 클릭 → 스트림 연결(registered로 uuid 확보) →
-// 입력/전송(POST /send, from = 웹 uuid) → 수신 message 프레임 표시. 끊김 표시 + 재연결(들고 있는 uuid로 리쥼).
-// EventSource는 GET+쿠키만 지원 — 우리 SSE 프레임은 event: 필드가 없으므로 기본 message 이벤트로 온다.
-// 1:1은 기록되지 않는다(00 §2) — 새로고침하면 이 화면의 상태(uuid·로그)도 함께 사라진다.
+// EventSource는 GET+쿠키만 지원하고, SSE 프레임에 event: 필드가 없어 기본 message 이벤트로 온다.
 import { useEffect, useRef, useState } from "react";
 
 interface ChatMessage {
@@ -11,7 +8,6 @@ interface ChatMessage {
 }
 
 export interface ChatPanelProps {
-  /** 대화 상대 에이전트의 uuid(agents.tsx 목록에서 넘어온다). */
   peerUuid: string;
   peerLabel: string;
   onClose: () => void;

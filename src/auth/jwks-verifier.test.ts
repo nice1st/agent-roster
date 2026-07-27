@@ -29,9 +29,7 @@ test("JWKS 검증기는 다른 키로 서명된 토큰을 거부한다", async (
 
 test("Better Auth가 발급한 JWT를 JWKS 검증기가 통과시켜 register가 성공한다", async () => {
   const webAuth = await createMigratedWebAuth();
-  // 실서버 흐름은 세션이 있는 GET /api/auth/token이다. 세션을 프로그램적으로 만들 간단한 방법이
-  // 없어(Google 소셜 로그인 전제), jwt 플러그인의 server-only signJWT 발급 표면(issueTokenForUser,
-  // web-auth.ts가 감싼 auth.api.signJWT)을 대신 쓴다 — 같은 키·같은 서명 경로를 그대로 태운다.
+  // 실서버 발급 경로(GET /api/auth/token)는 Google 로그인 세션 전제라 테스트 불가 — 같은 키·서명 경로인 server-only signJWT(issueTokenForUser)로 대신한다.
   const token = await webAuth.issueTokenForUser("u1");
   const verifier = await createJwksVerifierFromWebAuth(webAuth);
 

@@ -1,4 +1,3 @@
-// peers·set-groups·groups 동작 테스트 — 01 §3.2 교집합 판정, 실서버 port 0(05 §4 테스트 규범).
 import { Database } from "bun:sqlite";
 import { afterEach, beforeEach, expect, test } from "bun:test";
 import { type Es256KeyPair, generateEs256KeyPair, signToken } from "../auth/keys";
@@ -28,7 +27,6 @@ afterEach(() => {
   started.server.stop(true);
 });
 
-/** register로 등재하고 registered 프레임에서 uuid만 꺼낸다(peers·set-groups 테스트는 SSE 프레임을 더 안 본다). */
 async function registerAgent(userId: string): Promise<string> {
   const res = await fetch(new URL("/register", started.server.url), {
     method: "POST",

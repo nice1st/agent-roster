@@ -1,6 +1,3 @@
-// 관리자 부트스트랩 — 사용법: bun scripts/bootstrap-admin.ts <email>
-// 스키마를 적용하고(멱등) email의 admin role 사용자를 만든다. 이미 있으면 안내만 하고 성공 종료.
-// 관리자 화면(#7) 전에 첫 관리자를 만드는 통로다(05 §3).
 import { createWebAuth } from "../src/auth/web-auth";
 import { brokerDbPathFrom, openBrokerDatabase } from "../src/store/db";
 

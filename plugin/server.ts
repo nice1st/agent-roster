@@ -1,4 +1,3 @@
-// CC 플러그인 채널 서버(stdio MCP) — 슬라이스 2: register + send_message, 인바운드 message 알림.
 import { hostname } from "node:os";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
@@ -31,7 +30,6 @@ After that, the room stops accepting new messages — do not call send_room for 
 );
 
 let connection: BrokerConnection | null = null;
-// 브로커가 발급한 UUID를 세션 메모리에 보관 — 재호출 시 리쥼과 send의 from에 쓴다(04 §3)
 let storedUuid: string | undefined;
 
 mcp.setRequestHandler(ListToolsRequestSchema, () => ({
@@ -119,7 +117,6 @@ function textResult(text: string, isError = false) {
   return { content: [{ type: "text" as const, text }], ...(isError ? { isError: true } : {}) };
 }
 
-/** server.test.ts가 실제 브로커에 register → send_room을 그대로 태우는 동작 테스트에 쓰도록 export한다. */
 export async function handleRegister(args: { alias?: string; status?: string }) {
   const brokerUrl = process.env[ENV_BROKER_URL];
   const token = process.env[ENV_BROKER_TOKEN];
@@ -138,7 +135,6 @@ export async function handleRegister(args: { alias?: string; status?: string }) 
         const notification = toChannelNotification(event);
         if (notification !== null) mcp.notification(notification).catch(() => {});
       },
-      // 끊기면 사용자에게 알린다(04 §1) — 재등록 여부·시점은 클라이언트 자율이므로 알림만 한다.
       onClose: () => {
         mcp
           .notification({
@@ -191,7 +187,6 @@ async function handleSendMessage(args: { to_id?: string; message?: string; skill
   }
 }
 
-/** server.test.ts가 storedUuid 상태 없이 send_room의 HTTP 호출·에러 처리만 동작 테스트하도록 export한다. */
 export async function handleSendRoom(args: { room_id?: string; message?: string }) {
   const { room_id, message } = args;
   if (typeof room_id !== "string" || typeof message !== "string") {

@@ -1,4 +1,3 @@
-// set-meta 동작 테스트 — 05 §2 #9, 실서버 port 0(05 §4 테스트 규범).
 import { afterAll, beforeAll, expect, test } from "bun:test";
 import { type Es256KeyPair, generateEs256KeyPair, signToken } from "../auth/keys";
 import { createJwtVerifier } from "../auth/token";

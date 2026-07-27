@@ -1,7 +1,3 @@
-// POST /room-send — room 발언(브로커, 무인증, from 자기신고, 05 §2 #13). 1:1 send와 별도 인터페이스인 이유는
-// room 발언이 기록되고 전원에게 팬아웃되기 때문(01 §5·04 §2 send_room 행). store 직접 import 금지 — deps로 주입.
-// 발언 시점 ends_at 만료 검사(05 §2 #14) — 만료의 정확한 강제는 여기가 담당, 폭파(상태 전환·통보)는 스위프가 담당(05 §4).
-
 import type { Registry } from "./registry";
 import { fanoutRoomMessage, fanoutTargets, type RoomSubscriptions } from "./rooms";
 
@@ -22,7 +18,6 @@ export interface RoomSendDeps {
   getRoom(roomId: string): RoomInfo | null;
   isParticipant(roomId: string, uuid: string): boolean;
   listParticipantUuids(roomId: string): string[];
-  /** 발신 시점 레지스트리 alias를 from_label로 기록·팬아웃한다(웹이면 email alias 그대로). */
   recordMessage(roomId: string, fromUuid: string, fromLabel: string | undefined, content: string): void;
 }
 

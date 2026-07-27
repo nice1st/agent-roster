@@ -1,7 +1,5 @@
-// 세션이 필요한 관리자 API 동작 테스트. 세션 생성 방법(테스트 전용, web-auth.ts에는 없음):
-// emailAndPassword를 켠 별도 betterAuth 인스턴스(같은 db·secret)로 signUpEmail을 실제로 호출해
-// Set-Cookie를 받는다. 세션은 DB(secondary storage 없음)에 저장되고 쿠키 서명도 secret 기반이라
-// 프로덕션 webAuth(다른 옵션 인스턴스)에서도 같은 db·secret이면 그대로 유효하다(실행 검증).
+// 테스트 세션 생성: emailAndPassword를 켠 별도 betterAuth 인스턴스로 signUpEmail을 호출해 쿠키를 받는다 —
+// 세션은 DB에 저장되고 쿠키 서명도 secret 기반이라, 같은 db·secret이면 프로덕션 webAuth에서도 유효하다.
 import { Database } from "bun:sqlite";
 import { afterEach, beforeEach, expect, test } from "bun:test";
 import { betterAuth } from "better-auth";
@@ -19,7 +17,6 @@ interface TestUser {
   cookie: string;
 }
 
-/** 테스트 전용 — signUpEmail로 실제 세션을 만들고 role을 지정해 쿠키를 돌려준다. */
 async function createSessionUser(db: Database, email: string, role: "user" | "admin"): Promise<TestUser> {
   const signupAuth = betterAuth({
     database: db,

@@ -1,6 +1,3 @@
-// 도메인 마이그레이션 러너 — db/migrations/NNN-*.sql을 번호순으로 부팅 시 적용한다.
-// 적용 이력은 schema_migrations 테이블로 추적해 멱등을 보장한다(05 §4).
-
 import type { Database } from "bun:sqlite";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -25,7 +22,6 @@ function ensureHistoryTable(db: Database): void {
   db.run("CREATE TABLE IF NOT EXISTS schema_migrations (name TEXT PRIMARY KEY, applied_at TEXT NOT NULL)");
 }
 
-/** db/migrations/의 SQL 파일을 번호순으로 적용한다. 이미 적용된 파일은 건너뛰어 몇 번을 불러도 결과가 같다. */
 export function runDomainMigrations(db: Database, dir: string = DEFAULT_MIGRATIONS_DIR): void {
   ensureHistoryTable(db);
   const applied = new Set(

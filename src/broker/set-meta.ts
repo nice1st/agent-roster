@@ -1,6 +1,3 @@
-// POST /set-meta — 메타 갱신(05 §2 #9, set_summary 일반화). 무인증(send·discovery와 동일, from 자기신고).
-// alias·status 문자열 필드만 허용, 준 필드만 엔트리 meta에 병합하고 나머지는 유지한다(registry.mergeMeta).
-
 import type { Registry } from "./registry";
 
 interface SetMetaBody {

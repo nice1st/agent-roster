@@ -2,9 +2,6 @@ import type { MessageEvent } from "../shared/protocol";
 import type { Registry } from "./registry";
 import { sseFrame } from "./sse";
 
-// 1:1 릴레이 — 대상 UUID의 연결로 즉시 push하고 발신자에게 성패를 동기 응답한다(01 §4).
-// 저장 없음: 대상이 레지스트리에 없으면(오프라인이든 미존재든) Peer not found로 끝난다.
-
 interface SendBody {
   from?: unknown;
   to?: unknown;
@@ -49,7 +46,6 @@ export function createSendHandler(deps: SendDeps) {
     try {
       entry.handle.send(sseFrame(event));
     } catch {
-      // 계승 패턴: enqueue 실패 = 죽은 연결 — 엔트리를 제거하고 미존재와 동일하게 응답
       deps.registry.removeIfCurrent(to, entry.handle);
       return Response.json(PEER_NOT_FOUND);
     }

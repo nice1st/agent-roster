@@ -1,5 +1,3 @@
-// POST /room-send 동작 테스트(05 §2 #13). 실서버(startServer)를 띄워 실제 HTTP/SSE로 검증한다(05 §4 동작 테스트 규범).
-// 세션은 admin.test.ts와 같은 방식(signUpEmail), 에이전트 접속은 register.test.ts와 같은 방식(JWT)으로 만든다.
 import { Database } from "bun:sqlite";
 import { afterEach, beforeEach, expect, test } from "bun:test";
 import { betterAuth } from "better-auth";
@@ -67,7 +65,6 @@ afterEach(() => {
   started.server.stop(true);
 });
 
-/** register.test.ts와 같은 방식으로 등재하고, 이후 프레임을 순서대로 꺼낼 수 있는 핸들을 돌려준다. */
 async function registerAgent(userId: string, alias?: string) {
   const res = await fetch(new URL("/register", started.server.url), {
     method: "POST",
@@ -110,7 +107,6 @@ function roomSend(body: unknown): Promise<Response> {
   });
 }
 
-/** owner 세션 + 참여자 두 명이 배치되고 active인 room을 만들어 돌려준다. */
 async function setUpActiveRoom() {
   const owner = await createSessionUser(db, `owner-${crypto.randomUUID()}@example.com`);
   const a1owner = await createSessionUser(db, `a1-${crypto.randomUUID()}@example.com`);
@@ -169,8 +165,7 @@ test("참여자 발언이 전원에게 팬아웃되고 기록된다(from_label �
 test("구독한 웹 세션도 room-message를 받는다", async () => {
   const { owner, roomId, agent1 } = await setUpActiveRoom();
 
-  // 웹 세션 스트림을 열어 uuid를 확보(chat.test.ts와 같은 방식) — chatDeps 없이도 register 코어를 직접 쓴다.
-  // 이 스위트는 chatDeps를 마운트하지 않았으므로 register 엔드포인트로 웹 세션과 동일한 exposure [] 엔트리를 흉내낸다.
+  // 이 스위트는 chatDeps를 마운트하지 않으므로 register 엔드포인트로 웹 세션과 동일한 엔트리를 흉내낸다.
   const webRes = await fetch(new URL("/register", started.server.url), {
     method: "POST",
     headers: { authorization: `Bearer ${await signToken(keys.privateKey, owner.id)}` },
@@ -224,7 +219,7 @@ test("active가 아닌 room 발언은 거부된다", async () => {
 
 test("ends_at이 지난 room 발언은 즉시 거부된다", async () => {
   const { roomId, agent1 } = await setUpActiveRoom();
-  // ends_at을 과거로 직접 앞당긴다 — 만료 검사가 status와 무관하게 ends_at을 봄을 결정론적으로 검증(05 §4).
+  // ends_at을 과거로 직접 앞당긴다 — 만료 검사가 status와 무관하게 ends_at을 봄을 결정론적으로 검증한다.
   db.prepare("UPDATE rooms SET ends_at = ? WHERE id = ?").run(new Date(Date.now() - 1000).toISOString(), roomId);
 
   const res = await roomSend({ from: agent1.uuid, room: roomId, message: "이미 늦었다" });

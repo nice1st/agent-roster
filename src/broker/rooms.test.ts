@@ -1,5 +1,3 @@
-// room 만료 스위프 동작 테스트(05 §2 #14) — 실서버(startServer)를 짧은 heartbeatIntervalMs로 띄워 실제 스위프가
-// 만료 room을 폭파하는지 검증한다(05 §4 room 종료 처리 — 버튼 폭파와 같은 endRoom을 탄다).
 import { Database } from "bun:sqlite";
 import { afterEach, beforeEach, expect, test } from "bun:test";
 import { betterAuth } from "better-auth";

@@ -1,5 +1,3 @@
-// 연결 위생 설정 — 코드 기본값과 env 오버라이드. 시간·상한은 주입으로 결정론을 확보한다(05 §4).
-
 export interface HygieneConfig {
   heartbeatIntervalMs: number;
   maxConnections: number;
@@ -24,7 +22,6 @@ const ENV_KEYS: Record<keyof HygieneConfig, string> = {
   maxConnections: "BROKER_MAX_CONNECTIONS",
 };
 
-/** env에서 오버라이드를 읽는 순수 함수 — 미설정·빈 값은 생략하고, 양의 정수가 아니면 즉시 실패한다. */
 export function hygieneFromEnv(env: Record<string, string | undefined>): HygieneOverrides {
   const overrides: HygieneOverrides = {};
   for (const field of Object.keys(ENV_KEYS) as (keyof HygieneConfig)[]) {

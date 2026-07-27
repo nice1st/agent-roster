@@ -1,6 +1,3 @@
-// 관리자 API — prefix /api/admin/*(05 §2 #7). 모든 엔드포인트는 세션의 user가 admin role일 때만 통과, 아니면 403.
-// 라우트 맵을 export해 server.ts는 조립만 한다(병렬 슬라이스 충돌 최소화 규칙).
-
 import type { Database } from "bun:sqlite";
 import type { WebAuth } from "../auth/web-auth";
 import { createGroupStore } from "../store/groups";
@@ -31,7 +28,6 @@ function isNonEmptyString(value: unknown): value is string {
 
 type RouteHandler = (req: Request) => Response | Promise<Response>;
 
-/** admin role 세션 가드 — 통과하면 핸들러에 인증된 user를 넘긴다. */
 function requireAdmin(webAuth: WebAuth, handler: (req: Request, adminId: string) => Promise<Response>): RouteHandler {
   return async (req) => {
     const user = await webAuth.getSessionUser(req.headers);
@@ -40,7 +36,6 @@ function requireAdmin(webAuth: WebAuth, handler: (req: Request, adminId: string)
   };
 }
 
-/** 관리자 API 라우트 맵 — server.ts는 이걸 routes에 펼쳐 넣기만 한다. */
 export function createAdminApiRoutes(
   deps: AdminApiDeps,
 ): Record<string, { GET?: RouteHandler; POST?: RouteHandler; DELETE?: RouteHandler }> {

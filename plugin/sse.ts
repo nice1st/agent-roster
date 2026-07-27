@@ -1,5 +1,3 @@
-// SSE 스트림 증분 파서 — 주석 프레임(`: keepalive`)은 버리고 data 프레임의 JSON만 돌려준다.
-// 청크 경계가 프레임 중간에 걸릴 수 있으므로 버퍼를 유지한다.
 export function createSseParser(): (chunk: string) => unknown[] {
   let buffer = "";
   return (chunk) => {

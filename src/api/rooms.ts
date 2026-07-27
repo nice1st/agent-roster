@@ -1,7 +1,3 @@
-// 웹 room API — prefix /api/rooms(05 §2 #12·#13·#14·#15). 전부 세션 필요(없으면 401). room 조작(participants·start·
-// PATCH·end)과 기록 조회(messages)는 created_by 본인만, 아니면 403. 참여자 배치 대상은 세션 user에게 보이는
-// 에이전트만(agents.ts의 isVisibleToViewer 재사용). ended room도 기록 조회는 가능하다(01 §5 기록 보존).
-
 import type { WebAuth } from "../auth/web-auth";
 import type { Registry } from "../broker/registry";
 import { endRoom as brokerEndRoom, fanoutRoomStart, type RoomSubscriptions } from "../broker/rooms";
@@ -21,7 +17,6 @@ function jsonError(status: number, error: string): Response {
   return Response.json({ error }, { status });
 }
 
-// limit 상한 — 명시 안 하면 기본으로도 쓴다(과도한 단일 응답 방지).
 const MAX_MESSAGES_LIMIT = 200;
 
 type RouteHandler = (req: Request) => Response | Promise<Response>;
@@ -41,7 +36,6 @@ function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.trim() !== "";
 }
 
-/** 세션 가드 — 통과하면 핸들러에 인증된 userId를 넘긴다(admin.ts·agents.ts와 동일 패턴). */
 function requireSession(webAuth: WebAuth, handler: (req: Request, userId: string) => Promise<Response>): RouteHandler {
   return async (req) => {
     const user = await webAuth.getSessionUser(req.headers);
@@ -55,13 +49,11 @@ function roomIdFromPath(req: Request, segmentsFromEnd: number): string {
   return parts[parts.length - segmentsFromEnd] as string;
 }
 
-/** room API 라우트 맵 — server.ts는 이걸 routes에 펼쳐 넣기만 한다(admin.ts·agents.ts와 동일 조립 패턴). */
 export function createRoomsApiRoutes(
   deps: RoomsApiDeps,
 ): Record<string, Partial<Record<"GET" | "POST" | "DELETE" | "PATCH", RouteHandler>>> {
   const { webAuth, registry, rooms, subscriptions, getUserGroups } = deps;
 
-  /** created_by 본인 검증 — room이 없으면 404, 본인이 아니면 403. 통과하면 room을 돌려준다. */
   async function requireOwnedRoom(
     userId: string,
     roomId: string,

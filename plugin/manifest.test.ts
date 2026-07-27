@@ -1,4 +1,3 @@
-// 마켓플레이스 패키징 매니페스트(05 §2) 동작 테스트 — 형식이 깨지면 잡는다.
 import { expect, test } from "bun:test";
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";

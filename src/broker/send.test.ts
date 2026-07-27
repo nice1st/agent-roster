@@ -17,7 +17,6 @@ afterAll(() => {
   started.server.stop(true);
 });
 
-/** 수신자로 등록하고, 이후 프레임을 순서대로 꺼낼 수 있는 핸들을 돌려준다. */
 async function registerReceiver(userId: string, signal?: AbortSignal) {
   const res = await fetch(new URL("/register", started.server.url), {
     method: "POST",

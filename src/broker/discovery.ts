@@ -1,8 +1,3 @@
-// 발견 핸들러 — POST /peers, /set-groups, /groups (05 §2 #8). 세 엔드포인트 전부 무인증(send와 동일, from 자기신고).
-// 판정 규칙은 01 §3.2: 유효노출(X) = X.exposure가 "follow"면 소유자의 현재 그룹 전체, 목록이면 그 목록 ∩ 소유자의 현재 그룹.
-// 보인다(viewer, target) = 유효노출(viewer) ∩ 유효노출(target) ≠ ∅. 자기 자신 특례 없음 — 같은 판정을 탄다.
-// 그룹 조회는 매 요청 시점(즉시 반영) — 브로커는 store를 직접 import하지 않고 getUserGroups를 주입받는다.
-
 import type { Group } from "../store/groups";
 import type { Exposure, Registry, RegistryEntry } from "./registry";
 
@@ -26,7 +21,6 @@ async function parseBody(req: Request): Promise<Record<string, unknown> | null> 
   }
 }
 
-/** 유효노출(X) — exposure가 "follow"면 현재 소속 전체, 목록이면 목록 ∩ 현재 소속(01 §3.2). 슬라이스 10 agents API가 재사용. */
 export function effectiveExposure(exposure: Exposure, currentGroupIds: string[]): Set<string> {
   if (exposure === "follow") return new Set(currentGroupIds);
   const current = new Set(currentGroupIds);
@@ -40,7 +34,6 @@ function intersects(a: Set<string>, b: Set<string>): boolean {
   return false;
 }
 
-/** 보인다(viewer, target) — 유효노출 교집합이 비지 않으면 true. 자기 자신도 같은 판정(01 §3.2). */
 function isVisible(deps: DiscoveryDeps, viewer: RegistryEntry, target: RegistryEntry): boolean {
   const viewerExposed = effectiveExposure(
     viewer.exposure,

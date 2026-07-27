@@ -21,23 +21,12 @@ export interface ServerConfig {
   port: number;
   verifier: TokenVerifier;
   hygiene?: HygieneOverrides;
-  /** 없으면 /api/auth를 마운트하지 않는다 — 브로커는 인증 없이도 돈다. */
   webAuth?: WebAuth;
-  /** 웹 UI 라우트(HTML import) — 예: { "/": index }. */
   webRoutes?: Record<string, HTMLBundle>;
-  /** 관리자 API 라우트(src/api/admin.ts가 조합해 export) — 없으면 마운트하지 않는다. */
   adminRoutes?: Record<string, Partial<Record<"GET" | "POST" | "DELETE", RouteHandler>>>;
-  /** 없으면 /peers·/set-groups·/groups를 마운트하지 않는다(05 §2 #8 — 그룹 조회 의존성은 선택). */
   groupsDeps?: { getUserGroups(userId: string): Group[] };
-  /**
-   * 없으면 /api/agents·/api/my-agents를 마운트하지 않는다(05 §2 #10). registry를 필요로 해서
-   * groupsDeps처럼 deps만 받고 라우트는 startServer 내부에서 조립한다(admin.ts와 달리 registry는
-   * startServer 안에서 생성되므로 미리 만든 라우트 맵을 주입할 수 없다).
-   */
   agentsDeps?: { webAuth: WebAuth; getUserGroups(userId: string): Group[] };
-  /** 없으면 /api/chat/stream을 마운트하지 않는다(05 §2 #11) — agentsDeps와 동일한 이유로 registry 의존. */
   chatDeps?: { webAuth: WebAuth };
-  /** 없으면 /api/rooms*을 마운트하지 않는다(05 §2 #12) — agentsDeps와 동일한 이유로 registry 의존. */
   roomsDeps?: { webAuth: WebAuth; rooms: RoomStore; getUserGroups(userId: string): Group[] };
 }
 
@@ -50,7 +39,6 @@ export function startServer(config: ServerConfig) {
   const register = createRegisterHandler({ registry, verifier: config.verifier });
   const send = createSendHandler({ registry });
   const setMeta = createSetMetaHandler({ registry });
-  // 하트비트 작업 목록 — 앱 전체 인터벌은 이 하나뿐이다(05 §4). roomsDeps가 있으면 만료 스위프도 등록한다.
   const heartbeatTasks: Array<() => void> = [() => sweepKeepalive(registry)];
 
   const routes: Record<string, RouteValue> = {
@@ -110,7 +98,6 @@ export function startServer(config: ServerConfig) {
           roomsDeps.rooms.addMessage(roomId, fromUuid, fromLabel, content),
       }),
     };
-    // 만료 스위프 — 하트비트 작업으로 등록(05 §4). 버튼 폭파와 같은 endRoom을 탄다(broker/rooms.ts).
     heartbeatTasks.push(() =>
       sweepExpiredRooms({
         registry,
@@ -126,8 +113,7 @@ export function startServer(config: ServerConfig) {
 
   const server = Bun.serve({
     port: config.port,
-    // Bun.serve 기본 유휴 타임아웃은 10초 — 하트비트 주기(기본 30초, keepalive를 그 위에서 돌림)보다 짧아 SSE를 서버가 먼저 끊는다(02 §3).
-    // 연결 생존 관리는 자체 위생(keepalive push 실패·cancel)이 담당하므로 비활성.
+    // Bun.serve 기본 유휴 타임아웃 10초가 keepalive 주기(기본 30초)보다 짧아 SSE를 서버가 먼저 끊는다 — 생존 관리는 keepalive가 담당하므로 비활성.
     idleTimeout: 0,
     routes,
     fetch() {

@@ -1,5 +1,3 @@
-// GET /api/agents·/api/my-agents 동작 테스트(05 §2 #10). 세션은 admin.test.ts와 같은 방식(signUpEmail 실제 호출)으로 만든다.
-// 에이전트 접속은 register.test.ts와 같은 방식(JWT로 /register, registered 프레임에서 uuid 추출)으로 만든다.
 import { Database } from "bun:sqlite";
 import { afterEach, beforeEach, expect, test } from "bun:test";
 import { betterAuth } from "better-auth";
@@ -19,7 +17,6 @@ interface TestUser {
   cookie: string;
 }
 
-/** admin.test.ts와 동일한 테스트 전용 세션 생성 방식 — signUpEmail로 실제 세션·쿠키를 받는다. */
 async function createSessionUser(db: Database, email: string): Promise<TestUser> {
   const signupAuth = betterAuth({
     database: db,
@@ -64,7 +61,6 @@ afterEach(() => {
   started.server.stop(true);
 });
 
-/** register.test.ts와 같은 방식으로 등재하고 registered 프레임에서 uuid만 꺼낸다. */
 async function registerAgent(userId: string): Promise<string> {
   const res = await fetch(new URL("/register", started.server.url), {
     method: "POST",
@@ -130,7 +126,6 @@ test("내 그룹 밖 에이전트는 목록에 없다", async () => {
 test("my-agents는 노출과 무관하게 내 소유만 돌려준다", async () => {
   const me = await createSessionUser(db, "me@example.com");
   const other = await createSessionUser(db, "other@example.com");
-  // 그룹이 없어 /api/agents 기준으로는 아무에게도 노출되지 않는 상태에서도 my-agents는 봐야 한다.
   const myUuid = await registerAgent(me.id);
   const otherUuid = await registerAgent(other.id);
 

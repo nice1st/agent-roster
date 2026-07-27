@@ -15,7 +15,6 @@ export interface BrokerConnection {
   close(): void;
 }
 
-/** 브로커에 등록하고 registered 이벤트의 UUID를 받는다. 이후 스트림은 백그라운드로 계속 읽는다. */
 export async function registerWithBroker(options: RegisterOptions): Promise<BrokerConnection> {
   const aborter = new AbortController();
   const res = await fetch(new URL("/register", options.brokerUrl), {
@@ -33,7 +32,6 @@ export async function registerWithBroker(options: RegisterOptions): Promise<Brok
   const decoder = new TextDecoder();
   const parse = createSseParser();
 
-  // 첫 registered 프레임까지는 동기적으로 기다린다
   let uuid: string | undefined;
   const pending: unknown[] = [];
   while (uuid === undefined) {
@@ -51,7 +49,6 @@ export async function registerWithBroker(options: RegisterOptions): Promise<Brok
     }
   }
 
-  // 수신 루프 — 끊기면 onClose만 알린다. 재등록 여부·시점은 클라이언트 자율(04 §1).
   void (async () => {
     try {
       for (const event of pending) options.onEvent?.(event);

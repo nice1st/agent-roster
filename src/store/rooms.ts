@@ -1,6 +1,3 @@
-// room·room_participant·message 저장소 접근 — SQL은 이 모듈 안에만 둔다(05 §4). 스키마는 db/migrations/002-rooms.sql.
-// duration_minutes는 draft 동안 보관해두는 분 값이고, ends_at은 시작(및 PATCH) 시점에 "지금부터 N분"으로 확정한다.
-
 import type { Database } from "bun:sqlite";
 
 export type RoomStatus = "draft" | "active" | "ended";
@@ -25,7 +22,7 @@ export interface RoomParticipant {
 }
 
 export interface Message {
-  id: number; // rowid — 정렬·커서 기준(05 §4)
+  id: number; // rowid
   room_id: string;
   from_uuid: string;
   from_label: string | null;
@@ -61,7 +58,6 @@ export function createRoomStore(db: Database) {
       return db.query<Room, [string]>("SELECT * FROM rooms WHERE created_by = ? ORDER BY created_at DESC").all(userId);
     },
 
-    /** draft→active 전환, ends_at 확정(무제한이면 null 유지). */
     start(roomId: string): void {
       const room = this.get(roomId);
       if (room === null) return;
@@ -69,7 +65,6 @@ export function createRoomStore(db: Database) {
       db.prepare("UPDATE rooms SET status = 'active', ends_at = ? WHERE id = ?").run(endsAt, roomId);
     },
 
-    /** 지금부터 N분으로 ends_at 재설정(0 = 무제한 해제). active 중 포함, 언제나 가능(호출자가 ended 여부를 가드). */
     setDuration(roomId: string, durationMinutes: number): void {
       const endsAt = durationMinutes > 0 ? minutesFromNow(durationMinutes) : null;
       db.prepare("UPDATE rooms SET duration_minutes = ?, ends_at = ? WHERE id = ?").run(
@@ -79,12 +74,10 @@ export function createRoomStore(db: Database) {
       );
     },
 
-    /** active→ended 전환. 폭파 함수(broker/rooms.ts의 endRoom)가 상태 전환에 쓴다(05 §4 room 종료 처리). */
     end(roomId: string): void {
       db.prepare("UPDATE rooms SET status = 'ended' WHERE id = ?").run(roomId);
     },
 
-    /** 만료 스위프 대상 — status='active' AND ends_at <= now(05 §4). */
     listExpired(nowIso: string): Room[] {
       return db
         .query<Room, [string]>("SELECT * FROM rooms WHERE status = 'active' AND ends_at IS NOT NULL AND ends_at <= ?")
@@ -150,7 +143,6 @@ export function createRoomStore(db: Database) {
         .all(roomId);
     },
 
-    /** rowid 오름차순 커서 조회(05 §2 #15 이음새) — after 미지정이면 처음부터, limit 개수만큼. */
     listMessagesAfter(roomId: string, after: number, limit: number): Message[] {
       return db
         .query<Message, [string, number, number]>(

@@ -1,5 +1,3 @@
-// room 화면(03 §2 "room", 05 §2 #12·#13) — 목록·생성, draft 상태의 참여자 배치·시작, active 상태로 진입 시
-// RoomPanel(room-panel.tsx)로 넘긴다. 여기서는 draft 관리 화면까지만 다룬다.
 import { useEffect, useState } from "react";
 
 interface AgentMeta {
@@ -27,7 +25,6 @@ interface RoomListItem {
 
 export interface RoomsPageProps {
   onBack: () => void;
-  /** active room은 대화 화면(#13), ended room은 기록 조회 화면(#15)으로 넘긴다 — RoomPanel이 status로 분기한다. */
   onOpenRoom: (roomId: string, roomName: string, status: "active" | "ended") => void;
 }
 
