@@ -73,7 +73,7 @@ flowchart LR
 ## 4. 확정 결정
 
 - **저장소 = bun:sqlite** — 단일 파일(기본 `./data/broker.db`, `BROKER_DB_PATH`로 변경), WAL 모드. Better Auth 테이블은 CLI migrate(`bun run auth:migrate`), 도메인 테이블은 번호 붙인 SQL 마이그레이션(`db/migrations/`)을 부팅 시 적용(schema_migrations 이력 테이블로 추적). ORM 없음. 정렬·커서는 rowid([02 §3](02-tech-notes.md)).
-- **테스트 = bun test 3층** — ① 동작 테스트(주력): 임시 포트로 실서버를 띄워 실제 HTTP/SSE로 검증, DB는 테스트마다 `:memory:`/임시 파일 ② 순수 로직 단위 테스트(교집합 판정·이벤트 파싱 등) ③ 수동 스모크: 실물 CC 연결·Google OAuth 실물 플로우(자동화 제외 — 절차는 [smoke-guide](smoke-guide.md)). JWT 서명·검증은 테스트 키로 실제 수행한다. keepalive·room 타이머 등 시간 요소는 설정 주입으로 결정론을 확보한다.
+- **테스트 = bun test 3층** — ① 동작 테스트(주력): 임시 포트로 실서버를 띄워 실제 HTTP/SSE로 검증, DB는 테스트마다 `:memory:`/임시 파일 ② 순수 로직 단위 테스트(교집합 판정·이벤트 파싱 등) ③ 수동 스모크: 실물 CC 연결·Google OAuth 실물 플로우(자동화 제외). JWT 서명·검증은 테스트 키로 실제 수행한다. keepalive·room 타이머 등 시간 요소는 설정 주입으로 결정론을 확보한다.
 - **연결 위생** — keepalive 주석 프레임 30초(push 실패 = 엔트리 제거) / 유휴 타임아웃 없음(half-open 좀비는 재시작까지 잔존 — 수용된 트레이드오프) / 프로세스당 연결 수 상한 1,000(초과 register는 503, 리쥼 교체는 통과) / **미전송 큐 상한 없음** — Bun이 소켓 backpressure를 유저스페이스에 전파하지 않아 밀린 양을 측정할 수 없고([02 §3](02-tech-notes.md)), 동기 버스트만 잡는 반쪽 방어는 두지 않는다. 값은 env(`BROKER_HEARTBEAT_INTERVAL_MS`·`BROKER_MAX_CONNECTIONS`)로 외부 주입, 코드에는 기본값만.
 - **스케줄 = 하트비트 1개로 동결** — 앱 전체에 인터벌은 하나(기본 30초)만 두고, 순찰 작업(keepalive·room 만료 스위프·이후 추가분)을 목록으로 등록해 돌린다. 인터벌 증식이 유지보수 부패의 원인이라는 운영 경험에 따른 구조적 봉인. 작업 하나의 예외가 다른 작업을 막지 않는다.
 - **room 종료 처리** — 만료의 정확한 강제는 발언 시점 `ends_at` 검사(room-send에서 거부), 스위프는 상태 전환·room-end 통보만 담당(하트비트 위 작업 — 통보가 주기만큼 늦는 것은 수용). 버튼 폭파와 스위프 만료는 같은 폭파 함수를 탄다.

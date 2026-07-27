@@ -17,7 +17,17 @@
 
 단일 Bun 프로세스(브로커·인증·웹 API·웹 UI) + CC 플러그인(세션당 stdio MCP 서버). 구조와 확정 결정은 [docs/architecture.md](docs/architecture.md).
 
-기동·플러그인 설치·검증·롤백 절차는 [docs/smoke-guide.md](docs/smoke-guide.md).
+```bash
+# 브로커 — GOOGLE_CLIENT_ID·GOOGLE_CLIENT_SECRET·BETTER_AUTH_SECRET 필요
+bun run auth:migrate                       # Better Auth 테이블(멱등)
+bun scripts/bootstrap-admin.ts <email>     # 첫 admin(멱등)
+bun src/index.ts                           # http://localhost:3000, DB는 ./data/broker.db
+
+# CC 플러그인 — 토큰은 웹 "내 에이전트"에서 발급
+claude plugin marketplace add <레포 경로>
+claude plugin install roster@agent-roster
+export ROSTER_BROKER_URL=... ROSTER_BROKER_TOKEN=...   # CC를 띄우는 셸에서
+```
 
 ## 개발
 
@@ -37,7 +47,6 @@ Bun 1.3.11 고정. 모든 커밋은 셋 다 통과해야 한다.
 | [docs/02-tech-notes.md](docs/02-tech-notes.md) | 검증된 기술 사실 — Better Auth·Bun 런타임·계승 코드 실측 |
 | [docs/architecture.md](docs/architecture.md) | 실행 형태·모듈·동작 흐름·확정 결정·웹 화면 |
 | [docs/plugin.md](docs/plugin.md) | CC 플러그인 — 도구·정체성 흐름·패키징 |
-| [docs/smoke-guide.md](docs/smoke-guide.md) | 수동 스모크 절차 — 기동·연결·검증·롤백 |
 
 ## 원천
 

@@ -48,4 +48,4 @@ sequenceDiagram
 - 레포 루트 `.claude-plugin/marketplace.json`(마켓플레이스 매니페스트) + `plugin/.claude-plugin/plugin.json`(플러그인 매니페스트).
 - 실행 커맨드는 `bun run --cwd ${CLAUDE_PLUGIN_ROOT} start` → 번들 `plugin/dist/server.js`. **번들은 커밋한다** — 설치처에서 install 없이 기동.
 - 소스 수정 시 `cd plugin && bun run build`로 재번들. 매니페스트·env·버전 일관성은 `plugin/manifest.test.ts`가 가드.
-- 설치·검증·롤백 절차는 [smoke-guide](smoke-guide.md).
+- 설치 커맨드는 [README 구성과 실행](../README.md).
