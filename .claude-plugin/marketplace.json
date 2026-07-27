@@ -1,0 +1,19 @@
+{
+  "name": "agent-roster",
+  "owner": {
+    "name": "nice1st"
+  },
+  "metadata": {
+    "description": "Messaging broker for coding agents. 1:1 chat and rooms.",
+    "version": "0.0.1"
+  },
+  "plugins": [
+    {
+      "name": "roster",
+      "source": "./plugin",
+      "description": "Messaging broker plugin for coding agents. 1:1 chat and rooms.",
+      "category": "collaboration",
+      "tags": ["agents", "messaging", "broker", "collaboration"]
+    }
+  ]
+}

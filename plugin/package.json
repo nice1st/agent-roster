@@ -1,0 +1,12 @@
+{
+  "name": "roster",
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "start": "bun dist/server.js",
+    "build": "bun build server.ts --target=bun --outfile=dist/server.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.29.0"
+  }
+}

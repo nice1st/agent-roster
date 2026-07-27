@@ -1,0 +1,21 @@
+{
+  "name": "roster",
+  "description": "Messaging broker plugin for coding agents. 1:1 chat and rooms.",
+  "version": "0.0.1",
+  "author": {
+    "name": "nice1st"
+  },
+  "homepage": "https://github.com/nice1st/agent-roster",
+  "repository": "https://github.com/nice1st/agent-roster",
+  "keywords": ["agents", "messaging", "broker", "collaboration"],
+  "mcpServers": {
+    "roster": {
+      "command": "bun",
+      "args": ["run", "--cwd", "${CLAUDE_PLUGIN_ROOT}", "--shell=bun", "--silent", "start"],
+      "env": {
+        "ROSTER_BROKER_URL": "${ROSTER_BROKER_URL:-}",
+        "ROSTER_BROKER_TOKEN": "${ROSTER_BROKER_TOKEN:-}"
+      }
+    }
+  }
+}
