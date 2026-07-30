@@ -58,6 +58,7 @@ export function createRoomSendHandler(deps: RoomSendDeps) {
     deps.recordMessage(room, from, fromLabel, message);
 
     const targets = fanoutTargets(deps.listParticipantUuids(room), deps.subscriptions.get(room));
+    targets.delete(from);
     fanoutRoomMessage(
       { registry: deps.registry },
       room,

@@ -150,6 +150,8 @@ export function RoomPanel({ roomId, roomName, initialStatus, onClose }: RoomPane
       setError(body.error ?? "전송 실패");
       return;
     }
+    // 브로커 팬아웃이 발신자를 제외하므로 자기 발언은 스트림으로 돌아오지 않는다 — 여기서 직접 붙인다.
+    setMessages((prev) => [...prev, { from: myUuid, message: draft, sentAt: new Date().toISOString() }]);
     setDraft("");
   }
 

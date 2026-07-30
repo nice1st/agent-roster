@@ -131,39 +131,39 @@ async function setUpActiveRoom() {
   return { owner, roomId: room.id, agent1, agent2 };
 }
 
-test("참여자 발언이 전원에게 팬아웃되고 기록된다(from_label 포함)", async () => {
+test("발신자는 자기 room 발언을 돌려받지 않는다", async () => {
   const { roomId, agent1, agent2 } = await setUpActiveRoom();
 
   const res = await roomSend({ from: agent1.uuid, room: roomId, message: "안녕하세요" });
   expect(await res.json()).toEqual({ ok: true });
+  await agent2.nextFrame(); // 팬아웃 순서를 고정하기 위해 다른 참여자가 먼저 소비한다
 
-  const frame1 = await agent1.nextFrame(); // 발신자도 참여자이므로 자신에게도 온다(전체 팬아웃)
-  expect(frame1).toEqual({
+  // agent1의 스트림에 자기 발언 echo가 없다면 다음 프레임은 agent2가 보낸 이 발언이어야 한다
+  await roomSend({ from: agent2.uuid, room: roomId, message: "네 반갑습니다" });
+  const frame = await agent1.nextFrame();
+  expect(frame).toEqual({
     type: "room-message",
     room: roomId,
-    from: agent1.uuid,
-    from_label: "agent-1",
+    from: agent2.uuid,
+    from_label: "agent-2",
     sent_at: expect.any(String),
-    message: "안녕하세요",
+    message: "네 반갑습니다",
   });
+});
 
-  const frame2 = await agent2.nextFrame();
-  expect(frame2).toEqual({
-    type: "room-message",
-    room: roomId,
-    from: agent1.uuid,
-    from_label: "agent-1",
-    sent_at: expect.any(String),
-    message: "안녕하세요",
-  });
+test("발언은 여전히 기록된다", async () => {
+  const { roomId, agent1, agent2 } = await setUpActiveRoom();
+
+  await roomSend({ from: agent1.uuid, room: roomId, message: "안녕하세요" });
+  await agent2.nextFrame(); // 팬아웃 소비
 
   const stored = rooms.listMessages(roomId);
   expect(stored).toHaveLength(1);
   expect(stored[0]).toMatchObject({ from_uuid: agent1.uuid, from_label: "agent-1", content: "안녕하세요" });
 });
 
-test("구독한 웹 세션도 room-message를 받는다", async () => {
-  const { owner, roomId, agent1 } = await setUpActiveRoom();
+test("다른 참가자와 관전 구독자는 그대로 받는다", async () => {
+  const { owner, roomId, agent1, agent2 } = await setUpActiveRoom();
 
   // 이 스위트는 chatDeps를 마운트하지 않으므로 register 엔드포인트로 웹 세션과 동일한 엔트리를 흉내낸다.
   const webRes = await fetch(new URL("/register", started.server.url), {
@@ -194,6 +194,16 @@ test("구독한 웹 세션도 room-message를 받는다", async () => {
   expect(watchRes.status).toBe(200);
 
   await roomSend({ from: agent1.uuid, room: roomId, message: "관전자에게도 보이나" });
+
+  const frame2 = await agent2.nextFrame();
+  expect(frame2).toEqual({
+    type: "room-message",
+    room: roomId,
+    from: agent1.uuid,
+    from_label: "agent-1",
+    sent_at: expect.any(String),
+    message: "관전자에게도 보이나",
+  });
 
   const webFrame = await nextFrame();
   expect(webFrame).toMatchObject({ type: "room-message", room: roomId, message: "관전자에게도 보이나" });

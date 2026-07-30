@@ -325,7 +325,6 @@ async function setUpActiveRoomWithMessages(messageCount: number) {
 
   for (let i = 0; i < messageCount; i++) {
     await roomSend({ from: agent.uuid, room: room.id, message: `발언${i}` });
-    await agent.nextFrame(); // room-message 소비(자기 발언도 자신에게 팬아웃됨)
   }
 
   return { owner, roomId: room.id, agent };
