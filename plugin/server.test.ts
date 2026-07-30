@@ -82,6 +82,29 @@ test("active가 아닌 room에 발언하면 거부 메시지를 돌려준다", a
   expect(result.content[0]?.text).toContain("Room not active");
 });
 
+test("env 없이 register를 부르면 빠진 변수명이 담긴 안내가 나온다", async () => {
+  delete process.env[ENV_BROKER_URL];
+  delete process.env[ENV_BROKER_TOKEN];
+
+  const result = await handleRegister({});
+
+  expect(result.isError).toBe(true);
+  expect(result.content[0]?.text).toBe(
+    `${ENV_BROKER_URL}, ${ENV_BROKER_TOKEN} 환경변수가 필요하다 — CC를 띄운 셸에 export 후 재시작`,
+  );
+});
+
+test("아무도 안 듣는 포트로 향한 register 호출은 연결할 수 없다 형식으로 응답한다", async () => {
+  process.env[ENV_BROKER_URL] = "http://127.0.0.1:1";
+  process.env[ENV_BROKER_TOKEN] = await signToken(keys.privateKey, "u4");
+
+  const result = await handleRegister({});
+
+  expect(result.isError).toBe(true);
+  expect(result.content[0]?.text).toContain("브로커(http://127.0.0.1:1)에 연결할 수 없다");
+  expect(result.content[0]?.text).toContain("브로커 기동 여부를 확인하라");
+});
+
 function extractUuid(registeredText: string): string {
   const match = registeredText.match(/registered: (.+)/);
   if (match === null || match[1] === undefined) throw new Error(`unexpected register result: ${registeredText}`);
