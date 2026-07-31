@@ -14171,6 +14171,9 @@ function messageNotification(event) {
 }
 function roomStartNotification(event) {
   const lines = [`room "${event.name}" \uC774(\uAC00) \uC2DC\uC791\uB410\uB2E4.`];
+  const names = (event.participants ?? []).map((p) => p.alias ?? p.uuid).join(", ");
+  if (names !== "")
+    lines.push(`\uCC38\uAC00\uC790: ${names}`);
   if (event.context !== undefined)
     lines.push(`\uCEE8\uD14D\uC2A4\uD2B8: ${event.context}`);
   if (event.persona !== undefined)
@@ -14261,6 +14264,7 @@ After that, the room stops accepting new messages \u2014 do not call send_room f
 var connection = null;
 var storedUuid;
 var shuttingDown = false;
+var intentionalClose = false;
 mcp.setRequestHandler(ListToolsRequestSchema, () => ({
   tools: [
     {
@@ -14333,6 +14337,11 @@ mcp.setRequestHandler(ListToolsRequestSchema, () => ({
           status: { type: "string", description: "One-line status shown to peers" }
         }
       }
+    },
+    {
+      name: "unregister",
+      description: "Disconnect this session from the broker \u2014 peers can no longer reach you. Re-running register resumes the same UUID.",
+      inputSchema: { type: "object", properties: {} }
     }
   ]
 }));
@@ -14373,6 +14382,10 @@ async function handleRegister(args) {
       onClose: () => {
         if (shuttingDown)
           return;
+        if (intentionalClose) {
+          intentionalClose = false;
+          return;
+        }
         mcp.notification({
           method: "notifications/claude/channel",
           params: {
@@ -14585,6 +14598,16 @@ async function handleSetMeta(args) {
     return textResult(`set_meta failed: ${e instanceof Error ? e.message : String(e)}`, true);
   }
 }
+function handleUnregister() {
+  if (connection === null) {
+    return textResult("Not registered.");
+  }
+  const uuid2 = storedUuid;
+  intentionalClose = true;
+  connection.close();
+  connection = null;
+  return textResult(`unregistered: ${uuid2}`);
+}
 mcp.setRequestHandler(CallToolRequestSchema, async (req) => {
   const args = req.params.arguments ?? {};
   switch (req.params.name) {
@@ -14602,6 +14625,8 @@ mcp.setRequestHandler(CallToolRequestSchema, async (req) => {
       return handleListGroups();
     case "set_meta":
       return handleSetMeta(args);
+    case "unregister":
+      return handleUnregister();
     default:
       throw new Error(`unknown tool: ${req.params.name}`);
   }
@@ -14630,6 +14655,7 @@ if (import.meta.main) {
 }
 export {
   wireShutdown,
+  handleUnregister,
   handleSendRoom,
   handleRegister,
   createShutdown

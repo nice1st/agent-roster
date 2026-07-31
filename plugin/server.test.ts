@@ -1,5 +1,6 @@
 import { Database } from "bun:sqlite";
-import { afterEach, beforeEach, expect, test } from "bun:test";
+import { afterEach, beforeEach, expect, spyOn, test } from "bun:test";
+import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { type Es256KeyPair, generateEs256KeyPair, signToken } from "../src/auth/keys";
 import { createJwtVerifier } from "../src/auth/token";
 import { createWebAuth, type WebAuth } from "../src/auth/web-auth";
@@ -7,7 +8,7 @@ import { startServer } from "../src/server";
 import { runDomainMigrations } from "../src/store/migrations";
 import { createRoomStore, type RoomStore } from "../src/store/rooms";
 import { ENV_BROKER_TOKEN, ENV_BROKER_URL } from "./env";
-import { handleRegister, handleSendRoom } from "./server";
+import { handleRegister, handleSendRoom, handleUnregister } from "./server";
 
 const TEST_SECRET = "test-only-secret-plugin-send-room";
 
@@ -50,6 +51,13 @@ function activeRoom(): { id: string } {
   rooms.start(room.id);
   return room;
 }
+
+test('미등록 상태 unregister는 "Not registered."를 반환한다', () => {
+  // 모듈 전역 connection이 아직 null인 최초 테스트여야 한다 — 순서를 옮기지 말 것
+  const result = handleUnregister();
+  expect(result.isError).toBeUndefined();
+  expect(result.content[0]?.text).toBe("Not registered.");
+});
 
 test("room_id·message가 없으면 에러를 돌려준다", async () => {
   const result = await handleSendRoom({});
@@ -103,6 +111,46 @@ test("아무도 안 듣는 포트로 향한 register 호출은 연결할 수 없
   expect(result.isError).toBe(true);
   expect(result.content[0]?.text).toContain("브로커(http://127.0.0.1:1)에 연결할 수 없다");
   expect(result.content[0]?.text).toContain("브로커 기동 여부를 확인하라");
+});
+
+test("unregister가 연결을 닫고 storedUuid는 유지한다 — 재register 시 같은 uuid로 복귀한다", async () => {
+  process.env[ENV_BROKER_TOKEN] = await signToken(keys.privateKey, "u-unreg-resume");
+  const registerResult = await handleRegister({});
+  const uuid = extractUuid(registerResult.content[0]?.text ?? "");
+
+  const unregisterResult = handleUnregister();
+  expect(unregisterResult.isError).toBeUndefined();
+  expect(unregisterResult.content[0]?.text).toBe(`unregistered: ${uuid}`);
+
+  process.env[ENV_BROKER_TOKEN] = await signToken(keys.privateKey, "u-unreg-resume");
+  const resumeResult = await handleRegister({});
+  expect(resumeResult.isError).toBeUndefined();
+  expect(extractUuid(resumeResult.content[0]?.text ?? "")).toBe(uuid);
+});
+
+test("unregister에 의한 close에서는 끊김 알림이 발화되지 않는다", async () => {
+  process.env[ENV_BROKER_TOKEN] = await signToken(keys.privateKey, "u-unreg-notify");
+  await handleRegister({});
+  await Bun.sleep(50); // 이전 테스트의 leftover connection이 지금 닫히며 보내는 알림을 흘려보낸다
+
+  const notifications: unknown[] = [];
+  const spy = spyOn(Server.prototype, "notification").mockImplementation(async (n: unknown) => {
+    notifications.push(n);
+    return undefined;
+  });
+
+  try {
+    handleUnregister();
+    await Bun.sleep(100);
+
+    const disconnectNotifications = notifications.filter((n) => {
+      const content = (n as { params?: { content?: string } }).params?.content;
+      return typeof content === "string" && content.includes("연결이 끊겼다");
+    });
+    expect(disconnectNotifications).toHaveLength(0);
+  } finally {
+    spy.mockRestore();
+  }
 });
 
 function extractUuid(registeredText: string): string {

@@ -39,6 +39,7 @@ After that, the room stops accepting new messages — do not call send_room for 
 let connection: BrokerConnection | null = null;
 let storedUuid: string | undefined;
 let shuttingDown = false;
+let intentionalClose = false;
 
 mcp.setRequestHandler(ListToolsRequestSchema, () => ({
   tools: [
@@ -118,6 +119,12 @@ mcp.setRequestHandler(ListToolsRequestSchema, () => ({
         },
       },
     },
+    {
+      name: "unregister",
+      description:
+        "Disconnect this session from the broker — peers can no longer reach you. Re-running register resumes the same UUID.",
+      inputSchema: { type: "object" as const, properties: {} },
+    },
   ],
 }));
 
@@ -159,6 +166,10 @@ export async function handleRegister(args: { alias?: string; status?: string }) 
       },
       onClose: () => {
         if (shuttingDown) return; // 자발적 종료 중엔 알림을 보낼 대상이 없다
+        if (intentionalClose) {
+          intentionalClose = false;
+          return;
+        }
         mcp
           .notification({
             method: "notifications/claude/channel",
@@ -386,6 +397,17 @@ async function handleSetMeta(args: { alias?: string; status?: string }) {
   }
 }
 
+export function handleUnregister() {
+  if (connection === null) {
+    return textResult("Not registered.");
+  }
+  const uuid = storedUuid;
+  intentionalClose = true;
+  connection.close();
+  connection = null;
+  return textResult(`unregistered: ${uuid}`);
+}
+
 mcp.setRequestHandler(CallToolRequestSchema, async (req) => {
   const args = req.params.arguments ?? {};
   switch (req.params.name) {
@@ -403,6 +425,8 @@ mcp.setRequestHandler(CallToolRequestSchema, async (req) => {
       return handleListGroups();
     case "set_meta":
       return handleSetMeta(args as { alias?: string; status?: string });
+    case "unregister":
+      return handleUnregister();
     default:
       throw new Error(`unknown tool: ${req.params.name}`);
   }

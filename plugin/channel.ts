@@ -23,6 +23,8 @@ function messageNotification(event: MessageEvent): ChannelNotification {
 
 function roomStartNotification(event: RoomStartEvent): ChannelNotification {
   const lines = [`room "${event.name}" 이(가) 시작됐다.`];
+  const names = (event.participants ?? []).map((p) => p.alias ?? p.uuid).join(", ");
+  if (names !== "") lines.push(`참가자: ${names}`);
   if (event.context !== undefined) lines.push(`컨텍스트: ${event.context}`);
   if (event.persona !== undefined) lines.push(`당신의 페르소나: ${event.persona}`);
   const meta: Record<string, string> = { room_id: event.room, sent_at: event.sent_at };

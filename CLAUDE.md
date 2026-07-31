@@ -7,7 +7,6 @@
 계획된 기능 구현 완료. 남은 후속:
 
 - 요청별 인증 분류·적용 — 그때까지 브로커 API(`/send` 등)는 무인증(from 위조 수용 — `docs/architecture.md` §4).
-- 플러그인 `unregister` 도구 — 명시적 등록 해제. 현재는 세션 종료(연결 끊김)로만 엔트리가 정리된다(`docs/plugin.md` §2).
 
 검증 게이트: `bun test` · `bun run typecheck` · `bun run check` — 모든 커밋은 셋 다 통과.
 
