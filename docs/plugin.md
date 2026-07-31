@@ -1,6 +1,6 @@
 # CC 플러그인
 
-> 에이전트(Claude Code)가 브로커에 붙는 클라이언트. 용어·엔티티는 [01-domain-model](01-domain-model.md), 코드는 `plugin/`.
+> 에이전트(Claude Code)가 브로커에 붙는 클라이언트. 용어·엔티티는 [01-domain-model](01-domain-model.md), 코드는 `plugin-claudecode/`.
 
 ## 1. 구조
 
@@ -25,7 +25,7 @@
 
 ## 2.1 스킬 (사용자 진입점)
 
-`plugin/skills/<이름>/SKILL.md` 8종이 도구를 1:1로 랩핑한다 — `/roster:register`·`send`·`send-room`·`peers`·`groups`·`set-groups`·`status`(set_meta)·`unregister`. 사용자가 직접 부르는 용도라 전부 `disable-model-invocation: true`이며(모델 자동 발화 차단, description은 모델 컨텍스트에 실리지 않음), 본문은 인자 매핑과 호출 절차만 담는다 — 호출 계약(파라미터 의미·실패 해석)의 단일 정의 지점은 도구 description(§2)이다. 자연어 지시는 스킬을 거치지 않고 도구로 바로 간다.
+`plugin-claudecode/skills/<이름>/SKILL.md` 8종이 도구를 1:1로 랩핑한다 — `/roster:register`·`send`·`send-room`·`peers`·`groups`·`set-groups`·`status`(set_meta)·`unregister`. 사용자가 직접 부르는 용도라 전부 `disable-model-invocation: true`이며(모델 자동 발화 차단, description은 모델 컨텍스트에 실리지 않음), 본문은 인자 매핑과 호출 절차만 담는다 — 호출 계약(파라미터 의미·실패 해석)의 단일 정의 지점은 도구 description(§2)이다. 자연어 지시는 스킬을 거치지 않고 도구로 바로 간다.
 
 ## 3. 정체성 흐름
 
@@ -46,11 +46,11 @@ sequenceDiagram
 ```
 
 - **UUID 보관은 플러그인 몫** — 브로커가 발급한 UUID를 세션 메모리에 들고 있다가, 재접속 시 register가 그 UUID로 리쥼한다. 엔트리가 살아있으면 토큰의 user가 소유자와 일치할 때만 교체되고, (브로커 재시작 등으로) 없으면 같은 UUID로 새로 등재된다([01 §3.1](01-domain-model.md)). 보관 없이 register하면 새 에이전트가 된다.
-- **토큰(JWT)은 env로 주입** — `ROSTER_BROKER_URL`·`ROSTER_BROKER_TOKEN`(변수명의 단일 정의 지점은 `plugin/env.ts`). 토큰의 사용처가 regi뿐이라 기동 시점 1회 주입으로 충분하다.
+- **토큰(JWT)은 env로 주입** — `ROSTER_BROKER_URL`·`ROSTER_BROKER_TOKEN`(변수명의 단일 정의 지점은 `client-core/env.ts`). 토큰의 사용처가 regi뿐이라 기동 시점 1회 주입으로 충분하다.
 
 ## 4. 패키징
 
-- 레포 루트 `.claude-plugin/marketplace.json`(마켓플레이스 매니페스트) + `plugin/.claude-plugin/plugin.json`(플러그인 매니페스트).
-- 실행 커맨드는 `bun run --cwd ${CLAUDE_PLUGIN_ROOT} start` → 번들 `plugin/dist/server.js`. **번들은 커밋한다** — 설치처에서 install 없이 기동.
-- 소스 수정 시 `cd plugin && bun run build`로 재번들. 매니페스트·env·버전 일관성은 `plugin/manifest.test.ts`가 가드.
+- 레포 루트 `.claude-plugin/marketplace.json`(마켓플레이스 매니페스트) + `plugin-claudecode/.claude-plugin/plugin.json`(플러그인 매니페스트).
+- 실행 커맨드는 `bun run --cwd ${CLAUDE_PLUGIN_ROOT} start` → 번들 `plugin-claudecode/dist/server.js`. **번들은 커밋한다** — 설치처에서 install 없이 기동.
+- 소스 수정 시 `cd plugin-claudecode && bun run build`로 재번들. 매니페스트·env·버전 일관성은 `plugin-claudecode/manifest.test.ts`가 가드.
 - 설치 커맨드는 [README 구성과 실행](../README.md).

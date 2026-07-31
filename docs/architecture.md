@@ -15,7 +15,9 @@
 | 웹 API | 사용자·관리자 HTTP API. 관리자는 별도 모듈이 아니라 권한 구분([01 §2](01-domain-model.md)) | `src/api/` |
 | 웹 UI | React SPA — 화면은 §5 | `web/` |
 | 저장소 | user·group·user_group·room·room_participant·message. SQL은 이 모듈 안에만 — 저장소 전환 비용을 모듈 하나로 국한 | `src/store/` |
-| 플러그인 | CC 세션당 MCP 채널 서버([plugin](plugin.md)) | `plugin/` |
+| CC 플러그인 | 세션당 MCP 채널 서버([plugin](plugin.md)) | `plugin-claudecode/` |
+| OpenCode 플러그인 | 세션당 브로커 등록·주입([plugin-opencode](plugin-opencode.md)) | `plugin-opencode/` |
+| 클라이언트 공용 | 브로커 와이어(등록·SSE 수신·채널 변환)와 도구 HTTP 호출 — 두 플러그인이 공유 | `client-core/` |
 
 ## 3. 동작 흐름
 
@@ -23,7 +25,7 @@
 
 ```mermaid
 flowchart LR
-    CLIENT["에이전트 (CC)"]
+    CLIENT["에이전트 (CC·OpenCode)"]
     AUTH["인증<br/>JWT 검증 (JWKS 공개키)"]
     REG["레지스트리<br/>UUID → 연결·소유·노출·메타 (메모리)"]
 
@@ -80,6 +82,7 @@ flowchart LR
 - **턴 조율 = 프롬프트 수준** — 발언 순서를 브로커가 강제하지 않는다(배턴·지명 프로토콜 없음 — 상태 보관·브로커 개입·규칙 주입을 피한 결정). 조율은 사회자 페르소나와 context 규약으로 한다. 플랫폼의 지원은 room의 사회자 필수 플래그·지시문 저장과 draft 상태 참가자 persona PATCH까지 — 지시문을 페르소나에 합치는 것은 웹이 시작 시점에 수행한다.
 - **웹 UI = React + TypeScript, Bun 내장 번들링(HTML import)** — 실시간(SSE 반영) 화면이라 SPA, Better Auth react 클라이언트 사용. 분리 대비 습관: `web/`은 서버에서 공유 타입만 import, API는 상대경로 + base 상수 1곳. 폴백은 `bun build` 정적 산출물.
 - **도구 체인** — Bun 1.3.11 고정(`engines.bun` 단일 소스 + 테스트 프리로드에서 버전 가드. bun은 engines를 강제하지 않는다). 린트·포맷은 Biome(2 spaces·120). 타입 게이트는 `tsc --noEmit`. JWT는 jose — 브로커 검증은 공개키 주입 구조, 키 출처는 같은 프로세스의 Better Auth JWKS(부팅 시 1회 로드 — 키 회전은 재기동 전제). 의존성은 정확 버전 고정([02 §2](02-tech-notes.md) 교훈).
+- **클라이언트 확장 = 클라이언트별 어댑터 플러그인** — 브로커 와이어(HTTP+SSE)와 `<channel>` 태그 규약은 공통이고, 주입 수단·도구 노출 방식만 클라이언트별 플러그인이 감당한다(CC는 `plugin-claudecode/`, OpenCode는 `plugin-opencode/`, 공용 층은 `client-core/`). OpenCode의 등록 단위는 **세션**(대화당 UUID 1개, CC와 동일한 의미) — 플러그인은 인스턴스당 1개지만 도구 컨텍스트의 sessionID로 세션별 브로커 연결을 관리한다([02 §6](02-tech-notes.md)).
 - **관리자 부트스트랩 = 스크립트** — 첫 admin은 화면이 아니라 `bun scripts/bootstrap-admin.ts <email>`로 만든다(멱등).
 - **인증 범위** — 토큰 검증은 regi에서만 한다. 브로커의 나머지 API(`/send`·`/room-send`·`/peers` 등)는 무인증 — from 위조 가능을 수용한 상태다.
 
@@ -98,5 +101,5 @@ flowchart LR
 
 ## 6. 범위 밖
 
-- 멀티플랫폼 에이전트(OpenCode·Codex) — 구동 조사는 [02 §1](02-tech-notes.md), 브로커 클라이언트로의 확장 판정은 [02 §6](02-tech-notes.md).
+- Codex 클라이언트 — 확장 판정과 조건은 [02 §6](02-tech-notes.md). 인바운드 데몬 스모크 통과가 지원의 전제.
 - 메신저 연동(Google Chat 등) — 조사 사실은 [02 §4](02-tech-notes.md).

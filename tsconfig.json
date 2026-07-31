@@ -13,5 +13,5 @@
     "noFallthroughCasesInSwitch": true,
     "verbatimModuleSyntax": true
   },
-  "include": ["src", "plugin", "scripts", "test-setup.ts"]
+  "include": ["src", "client-core", "plugin-claudecode", "plugin-opencode", "scripts", "test-setup.ts"]
 }

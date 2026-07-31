@@ -115,23 +115,25 @@
 - **팬아웃 부재** — send는 1:1 유니캐스트만.
 - **연결 위생 부재** — 방어가 keepalive 실패 시 삭제 하나뿐. 연결 수 상한·연결별 큐 상한·유휴 타임아웃 없음.
 
-## 6. 클라이언트 확장 — OpenCode·Codex가 브로커 클라이언트가 될 수 있는가 (원문 검증, 2026-07-31)
+## 6. 클라이언트 확장 — OpenCode·Codex가 브로커 클라이언트가 될 수 있는가 (원문 검증 · OpenCode 인바운드는 실행 검증, 2026-07-31)
 
-CC 외 클라이언트의 관건 두 가지: (A) 아웃바운드 — 그 도구의 모델이 MCP 도구를 부를 수 있는가. (B) 인바운드 — 외부 메시지를 진행 중인 세션에 밀어넣어 모델이 자발 반응하게 할 수단이 있는가. 소스 원문 기준(OpenCode v1.18.10 / Codex rust-v0.146.0), 실행 검증은 아님.
+CC 외 클라이언트의 관건 두 가지: (A) 아웃바운드 — 그 도구의 모델이 MCP 도구를 부를 수 있는가. (B) 인바운드 — 외부 메시지를 진행 중인 세션에 밀어넣어 모델이 자발 반응하게 할 수단이 있는가. 소스 원문 기준(OpenCode v1.18.10 / Codex rust-v0.146.0).
 
 | 항목 | OpenCode | Codex CLI |
 |------|----------|-----------|
 | A. 아웃바운드 | 된다 — stdio MCP + 플러그인 자체 도구 | 된다 — `~/.codex/config.toml` `[mcp_servers.*]` |
-| B. 인바운드 | **된다** — 플러그인이 in-process API로 `session.prompt` 주입 | **조건부** — app-server 데몬 모드에서만(`turn/start`·`turn/steer`). 기본(embedded) 모드는 불가 |
+| B. 인바운드 | **된다(실행 검증)** — 플러그인이 in-process API로 `session.prompt` 주입 | **조건부** — app-server 데몬 모드에서만(`turn/start`·`turn/steer`). 기본(embedded) 모드는 불가 |
 | MCP 서버발 알림 → 대화 노출 | 안 된다 (의도적 비활성 — 소스 주석·이슈 확인) | 안 된다 (로그로만 소비) |
 
 ### OpenCode — 권장 구조: 플러그인 하나로 양방향
 
 - MCP는 인스턴스(프로젝트)당 1회 spawn·전 세션 공유(`packages/opencode/src/mcp/index.ts`) — CC처럼 세션마다 뜨지 않아 MCP만으로는 세션 단위 정체성 불가.
 - 플러그인 체계가 대안을 제공: `tool` 훅으로 자체 도구 정의(ctx에 `sessionID` 포함), 플러그인 입력의 `client`가 서버 전체 API를 in-process로 직결(`Server.Default().app.fetch`) — 기본 TUI가 TCP를 안 열어도 동작.
-- 인바운드: 플러그인이 브로커 SSE를 구독하고 `POST /session/:id/message`(또는 `prompt_async`)로 주입. busy 세션에도 안전 — prompt는 저장 후 루프 합류라 진행 중 턴 뒤에 자연 처리.
-- 미실측 1건: 플러그인발 주입이 TUI 화면에 즉시 렌더되는지.
-- 결정 필요: 에이전트 등록 단위 — 플러그인 상태가 인스턴스당 1개라 세션/인스턴스 중 선택해야 한다.
+- 인바운드: 플러그인이 세션별로 브로커 SSE를 구독하고 그 세션에 `client.session.promptAsync`로 주입. 등록 단위는 세션([architecture §4](architecture.md)).
+- 실행 검증(v1.18.10, tmux + OpenAI 호환 가짜 프로바이더): idle 세션 주입은 즉시 TUI에 렌더되고 턴이 실행된다. busy 세션 주입도 즉시 렌더되며 QUEUED 표시로 대기하다 진행 중 턴이 끝나면 자연 처리된다.
+- 실행 검증(같은 환경, `plugin-opencode/` E2E 스모크): `opencode.json`의 `plugin` 배열은 절대경로 `.ts` 파일을 로드한다. 플러그인 자체 도구는 모델 도구 목록에 실리고, 인바운드 채널 태그 주입 → 모델의 `roster_send_message` 호출 → 브로커 발신 왕복이 성립한다.
+- 실행 검증: TUI가 열람하지 않는 세션에 주입해도 턴은 정상 실행된다 — 화면에 보이는 것은 열람 중인 세션뿐이고, 다른 세션의 주입·응답은 그 세션을 열면 보인다.
+- 실사용 검증(2026-07-31, Gemini 실모델·실토큰·로컬 브로커): 세션 등록과 CC 세션과의 room 대화가 동작한다.
 
 ### Codex — 권장 구조: 아웃바운드 즉시, 인바운드는 데몬 실측 후 조건부
 

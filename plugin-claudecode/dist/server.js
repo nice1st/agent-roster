@@ -6612,7 +6612,7 @@ var require_dist = __commonJS((exports, module) => {
 // server.ts
 import { hostname } from "os";
 
-// ../node_modules/zod/v4/core/core.js
+// ../node_modules/@modelcontextprotocol/sdk/node_modules/zod/v4/core/core.js
 var _a;
 function $constructor(name, initializer, params) {
   function init(inst, def) {
@@ -6687,7 +6687,7 @@ function config(newConfig) {
     Object.assign(globalConfig, newConfig);
   return globalConfig;
 }
-// ../node_modules/zod/v4/core/util.js
+// ../node_modules/@modelcontextprotocol/sdk/node_modules/zod/v4/core/util.js
 var exports_util = {};
 __export(exports_util, {
   unwrapMessage: () => unwrapMessage,
@@ -7379,7 +7379,7 @@ class Class {
   constructor(..._args) {}
 }
 
-// ../node_modules/zod/v4/core/errors.js
+// ../node_modules/@modelcontextprotocol/sdk/node_modules/zod/v4/core/errors.js
 var initializer = (inst, def) => {
   inst.name = "$ZodError";
   Object.defineProperty(inst, "_zod", {
@@ -7448,7 +7448,7 @@ function formatError(error, mapper = (issue2) => issue2.message) {
   return fieldErrors;
 }
 
-// ../node_modules/zod/v4/core/parse.js
+// ../node_modules/@modelcontextprotocol/sdk/node_modules/zod/v4/core/parse.js
 var _parse = (_Err) => (schema, value, _ctx, _params) => {
   const ctx = _ctx ? { ..._ctx, async: false } : { async: false };
   const result = schema._zod.run({ value, issues: [] }, ctx);
@@ -7525,7 +7525,7 @@ var _safeEncodeAsync = (_Err) => async (schema, value, _ctx) => {
 var _safeDecodeAsync = (_Err) => async (schema, value, _ctx) => {
   return _safeParseAsync(_Err)(schema, value, _ctx);
 };
-// ../node_modules/zod/v4/core/regexes.js
+// ../node_modules/@modelcontextprotocol/sdk/node_modules/zod/v4/core/regexes.js
 var cuid = /^[cC][0-9a-z]{6,}$/;
 var cuid2 = /^[0-9a-z]+$/;
 var ulid = /^[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26}$/;
@@ -7583,7 +7583,7 @@ var _null = /^null$/i;
 var lowercase = /^[^A-Z]*$/;
 var uppercase = /^[^a-z]*$/;
 
-// ../node_modules/zod/v4/core/checks.js
+// ../node_modules/@modelcontextprotocol/sdk/node_modules/zod/v4/core/checks.js
 var $ZodCheck = /* @__PURE__ */ $constructor("$ZodCheck", (inst, def) => {
   var _a2;
   inst._zod ?? (inst._zod = {});
@@ -7972,7 +7972,7 @@ var $ZodCheckOverwrite = /* @__PURE__ */ $constructor("$ZodCheckOverwrite", (ins
   };
 });
 
-// ../node_modules/zod/v4/core/doc.js
+// ../node_modules/@modelcontextprotocol/sdk/node_modules/zod/v4/core/doc.js
 class Doc {
   constructor(args = []) {
     this.content = [];
@@ -8010,14 +8010,14 @@ class Doc {
   }
 }
 
-// ../node_modules/zod/v4/core/versions.js
+// ../node_modules/@modelcontextprotocol/sdk/node_modules/zod/v4/core/versions.js
 var version = {
   major: 4,
   minor: 4,
   patch: 3
 };
 
-// ../node_modules/zod/v4/core/schemas.js
+// ../node_modules/@modelcontextprotocol/sdk/node_modules/zod/v4/core/schemas.js
 var $ZodType = /* @__PURE__ */ $constructor("$ZodType", (inst, def) => {
   var _a2;
   inst ?? (inst = {});
@@ -9490,7 +9490,7 @@ function handleRefineResult(result, payload, input, inst) {
     payload.issues.push(issue(_iss));
   }
 }
-// ../node_modules/zod/v4/locales/en.js
+// ../node_modules/@modelcontextprotocol/sdk/node_modules/zod/v4/locales/en.js
 var error = () => {
   const Sizable = {
     string: { unit: "characters", verb: "to have" },
@@ -9600,7 +9600,7 @@ function en_default() {
     localeError: error()
   };
 }
-// ../node_modules/zod/v4/core/registries.js
+// ../node_modules/@modelcontextprotocol/sdk/node_modules/zod/v4/core/registries.js
 var _a2;
 var $output = Symbol("ZodOutput");
 var $input = Symbol("ZodInput");
@@ -9650,7 +9650,7 @@ function registry() {
 }
 (_a2 = globalThis).__zod_globalRegistry ?? (_a2.__zod_globalRegistry = registry());
 var globalRegistry = globalThis.__zod_globalRegistry;
-// ../node_modules/zod/v4/core/api.js
+// ../node_modules/@modelcontextprotocol/sdk/node_modules/zod/v4/core/api.js
 function _string(Class2, params) {
   return new Class2({
     type: "string",
@@ -10116,7 +10116,7 @@ function _check(fn, params) {
   ch._zod.check = fn;
   return ch;
 }
-// ../node_modules/zod/v4/core/to-json-schema.js
+// ../node_modules/@modelcontextprotocol/sdk/node_modules/zod/v4/core/to-json-schema.js
 function initializeContext(params) {
   let target = params?.target ?? "draft-2020-12";
   if (target === "draft-4")
@@ -10468,7 +10468,7 @@ var createStandardJSONSchemaMethod = (schema, io, processors = {}) => (params) =
   extractDefs(ctx, schema);
   return finalize(ctx, schema);
 };
-// ../node_modules/zod/v4/core/json-schema-processors.js
+// ../node_modules/@modelcontextprotocol/sdk/node_modules/zod/v4/core/json-schema-processors.js
 var formatMap = {
   guid: "uuid",
   url: "uri",
@@ -10858,7 +10858,7 @@ function getLiteralValue(schema) {
     return directValue;
   return;
 }
-// ../node_modules/zod/v4/classic/iso.js
+// ../node_modules/@modelcontextprotocol/sdk/node_modules/zod/v4/classic/iso.js
 var exports_iso = {};
 __export(exports_iso, {
   time: () => time2,
@@ -10899,7 +10899,7 @@ function duration2(params) {
   return _isoDuration(ZodISODuration, params);
 }
 
-// ../node_modules/zod/v4/classic/errors.js
+// ../node_modules/@modelcontextprotocol/sdk/node_modules/zod/v4/classic/errors.js
 var initializer2 = (inst, issues) => {
   $ZodError.init(inst, issues);
   inst.name = "ZodError";
@@ -10933,7 +10933,7 @@ var ZodRealError = /* @__PURE__ */ $constructor("ZodError", initializer2, {
   Parent: Error
 });
 
-// ../node_modules/zod/v4/classic/parse.js
+// ../node_modules/@modelcontextprotocol/sdk/node_modules/zod/v4/classic/parse.js
 var parse3 = /* @__PURE__ */ _parse(ZodRealError);
 var parseAsync2 = /* @__PURE__ */ _parseAsync(ZodRealError);
 var safeParse3 = /* @__PURE__ */ _safeParse(ZodRealError);
@@ -10947,7 +10947,7 @@ var safeDecode2 = /* @__PURE__ */ _safeDecode(ZodRealError);
 var safeEncodeAsync2 = /* @__PURE__ */ _safeEncodeAsync(ZodRealError);
 var safeDecodeAsync2 = /* @__PURE__ */ _safeDecodeAsync(ZodRealError);
 
-// ../node_modules/zod/v4/classic/schemas.js
+// ../node_modules/@modelcontextprotocol/sdk/node_modules/zod/v4/classic/schemas.js
 var _installedGroups = /* @__PURE__ */ new WeakMap;
 function _installLazyMethods(inst, group, methods) {
   const proto = Object.getPrototypeOf(inst);
@@ -11787,7 +11787,7 @@ function preprocess(fn, schema) {
     out: schema
   });
 }
-// ../node_modules/zod/v4/classic/external.js
+// ../node_modules/@modelcontextprotocol/sdk/node_modules/zod/v4/classic/external.js
 config(en_default());
 
 // ../node_modules/@modelcontextprotocol/sdk/dist/esm/types.js
@@ -14073,7 +14073,56 @@ class StdioServerTransport {
   }
 }
 
-// sse.ts
+// ../client-core/api.ts
+async function post(brokerUrl, pathname, body) {
+  const res = await fetch(new URL(pathname, brokerUrl), {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok)
+    throw new Error(`${pathname} failed: ${res.status} ${await res.text()}`.trim());
+  const result = await res.json();
+  if (!result.ok)
+    throw new Error(`${pathname} rejected: ${result.error}`);
+  return result;
+}
+async function sendMessage(brokerUrl, from, to, message, skill) {
+  await post(brokerUrl, "/send", { from, to, message, ...skill !== undefined ? { skill } : {} });
+}
+async function sendRoom(brokerUrl, from, room, message) {
+  await post(brokerUrl, "/room-send", { from, room, message });
+}
+async function listPeers(brokerUrl, from) {
+  const result = await post(brokerUrl, "/peers", { from });
+  return result.peers ?? [];
+}
+async function setGroups(brokerUrl, from, groups) {
+  await post(brokerUrl, "/set-groups", { from, groups });
+}
+async function listGroups(brokerUrl, from) {
+  const result = await post(brokerUrl, "/groups", { from });
+  return { memberOf: result.member_of ?? [], exposure: result.exposure ?? "follow", exposed: result.exposed ?? [] };
+}
+async function setMeta(brokerUrl, from, alias, status) {
+  await post(brokerUrl, "/set-meta", { from, alias, status });
+}
+function formatPeers(peers) {
+  if (peers.length === 0)
+    return "No peers visible.";
+  return peers.map((p) => `${p.uuid}  alias=${p.meta.alias ?? "-"}  status=${p.meta.status ?? "-"}`).join(`
+`);
+}
+function formatGroups(view) {
+  const memberOf = view.memberOf.map((g) => `${g.id} (${g.name})`).join(", ") || "-";
+  const exposure = view.exposure === "follow" ? "follow" : `[${view.exposure.join(", ")}]`;
+  const exposed = view.exposed.join(", ") || "-";
+  return `member_of: ${memberOf}
+exposure: ${exposure}
+exposed: ${exposed}`;
+}
+
+// ../client-core/sse.ts
 function createSseParser() {
   let buffer = "";
   return (chunk) => {
@@ -14101,7 +14150,7 @@ function createSseParser() {
   };
 }
 
-// broker-client.ts
+// ../client-core/broker-client.ts
 async function registerWithBroker(options) {
   const aborter = new AbortController;
   const res = await fetch(new URL("/register", options.brokerUrl), {
@@ -14151,7 +14200,7 @@ async function registerWithBroker(options) {
   return { uuid: uuid2, close: () => aborter.abort() };
 }
 
-// channel.ts
+// ../client-core/channel.ts
 function toChannelNotification(event) {
   if (isMessageEvent(event))
     return messageNotification(event);
@@ -14218,7 +14267,7 @@ function isRoomEndEvent(event) {
   return e.type === "room-end" && typeof e.room === "string" && typeof e.name === "string" && typeof e.sent_at === "string";
 }
 
-// env.ts
+// ../client-core/env.ts
 var ENV_BROKER_URL = "ROSTER_BROKER_URL";
 var ENV_BROKER_TOKEN = "ROSTER_BROKER_TOKEN";
 function isConfigured(value) {
@@ -14231,8 +14280,8 @@ function readEnv(name) {
   const value = process.env[name];
   return isConfigured(value) ? value : undefined;
 }
-function missingEnvMessage(names) {
-  return `${names.join(", ")} \uD658\uACBD\uBCC0\uC218\uAC00 \uD544\uC694\uD558\uB2E4 \u2014 CC\uB97C \uB744\uC6B4 \uC178\uC5D0 export \uD6C4 \uC7AC\uC2DC\uC791`;
+function missingEnvMessage(names, client = "CC") {
+  return `${names.join(", ")} \uD658\uACBD\uBCC0\uC218\uAC00 \uD544\uC694\uD558\uB2E4 \u2014 ${client}\uB97C \uB744\uC6B4 \uC178\uC5D0 export \uD6C4 \uC7AC\uC2DC\uC791`;
 }
 
 // server.ts
@@ -14416,23 +14465,12 @@ async function handleSendMessage(args) {
     return textResult(missingEnvMessage([ENV_BROKER_URL]), true);
   }
   try {
-    const res = await fetch(new URL("/send", brokerUrl), {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ from: storedUuid, to: to_id, message, ...skill !== undefined ? { skill } : {} })
-    });
-    if (!res.ok) {
-      return textResult(`send failed: ${res.status} ${await res.text()}`.trim(), true);
-    }
-    const result = await res.json();
-    if (!result.ok) {
-      return textResult(`Send rejected: ${result.error}`, true);
-    }
+    await sendMessage(brokerUrl, storedUuid, to_id, message, skill);
     return textResult(`Delivered to ${to_id}.`);
   } catch (e) {
     if (isConnectionFailure(e))
       return connectionFailureResult(brokerUrl, e);
-    return textResult(`send_message failed: ${e instanceof Error ? e.message : String(e)}`, true);
+    return textResult(e instanceof Error ? e.message : String(e), true);
   }
 }
 async function handleSendRoom(args) {
@@ -14448,23 +14486,12 @@ async function handleSendRoom(args) {
     return textResult(missingEnvMessage([ENV_BROKER_URL]), true);
   }
   try {
-    const res = await fetch(new URL("/room-send", brokerUrl), {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ from: storedUuid, room: room_id, message })
-    });
-    if (!res.ok) {
-      return textResult(`send_room failed: ${res.status} ${await res.text()}`.trim(), true);
-    }
-    const result = await res.json();
-    if (!result.ok) {
-      return textResult(`send_room rejected: ${result.error}`, true);
-    }
+    await sendRoom(brokerUrl, storedUuid, room_id, message);
     return textResult(`Delivered to room ${room_id}.`);
   } catch (e) {
     if (isConnectionFailure(e))
       return connectionFailureResult(brokerUrl, e);
-    return textResult(`send_room failed: ${e instanceof Error ? e.message : String(e)}`, true);
+    return textResult(e instanceof Error ? e.message : String(e), true);
   }
 }
 async function handleListPeers() {
@@ -14476,28 +14503,11 @@ async function handleListPeers() {
     return textResult(missingEnvMessage([ENV_BROKER_URL]), true);
   }
   try {
-    const res = await fetch(new URL("/peers", brokerUrl), {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ from: storedUuid })
-    });
-    if (!res.ok) {
-      return textResult(`list_peers failed: ${res.status} ${await res.text()}`.trim(), true);
-    }
-    const result = await res.json();
-    if (!result.ok) {
-      return textResult(`list_peers rejected: ${result.error}`, true);
-    }
-    const peers = result.peers ?? [];
-    if (peers.length === 0)
-      return textResult("No peers visible.");
-    const lines = peers.map((p) => `${p.uuid}  alias=${p.meta.alias ?? "-"}  status=${p.meta.status ?? "-"}`);
-    return textResult(lines.join(`
-`));
+    return textResult(formatPeers(await listPeers(brokerUrl, storedUuid)));
   } catch (e) {
     if (isConnectionFailure(e))
       return connectionFailureResult(brokerUrl, e);
-    return textResult(`list_peers failed: ${e instanceof Error ? e.message : String(e)}`, true);
+    return textResult(e instanceof Error ? e.message : String(e), true);
   }
 }
 async function handleSetGroups(args) {
@@ -14512,23 +14522,12 @@ async function handleSetGroups(args) {
     return textResult(missingEnvMessage([ENV_BROKER_URL]), true);
   }
   try {
-    const res = await fetch(new URL("/set-groups", brokerUrl), {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ from: storedUuid, groups: args.groups })
-    });
-    if (!res.ok) {
-      return textResult(`set_groups failed: ${res.status} ${await res.text()}`.trim(), true);
-    }
-    const result = await res.json();
-    if (!result.ok) {
-      return textResult(`set_groups rejected: ${result.error}`, true);
-    }
+    await setGroups(brokerUrl, storedUuid, args.groups);
     return textResult("Groups updated.");
   } catch (e) {
     if (isConnectionFailure(e))
       return connectionFailureResult(brokerUrl, e);
-    return textResult(`set_groups failed: ${e instanceof Error ? e.message : String(e)}`, true);
+    return textResult(e instanceof Error ? e.message : String(e), true);
   }
 }
 async function handleListGroups() {
@@ -14540,28 +14539,11 @@ async function handleListGroups() {
     return textResult(missingEnvMessage([ENV_BROKER_URL]), true);
   }
   try {
-    const res = await fetch(new URL("/groups", brokerUrl), {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ from: storedUuid })
-    });
-    if (!res.ok) {
-      return textResult(`list_groups failed: ${res.status} ${await res.text()}`.trim(), true);
-    }
-    const result = await res.json();
-    if (!result.ok) {
-      return textResult(`list_groups rejected: ${result.error}`, true);
-    }
-    const memberOf = (result.member_of ?? []).map((g) => `${g.id} (${g.name})`).join(", ") || "-";
-    const exposure = result.exposure === "follow" ? "follow" : `[${(result.exposure ?? []).join(", ")}]`;
-    const exposed = (result.exposed ?? []).join(", ") || "-";
-    return textResult(`member_of: ${memberOf}
-exposure: ${exposure}
-exposed: ${exposed}`);
+    return textResult(formatGroups(await listGroups(brokerUrl, storedUuid)));
   } catch (e) {
     if (isConnectionFailure(e))
       return connectionFailureResult(brokerUrl, e);
-    return textResult(`list_groups failed: ${e instanceof Error ? e.message : String(e)}`, true);
+    return textResult(e instanceof Error ? e.message : String(e), true);
   }
 }
 async function handleSetMeta(args) {
@@ -14579,23 +14561,12 @@ async function handleSetMeta(args) {
     return textResult(missingEnvMessage([ENV_BROKER_URL]), true);
   }
   try {
-    const res = await fetch(new URL("/set-meta", brokerUrl), {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ from: storedUuid, alias: args.alias, status: args.status })
-    });
-    if (!res.ok) {
-      return textResult(`set_meta failed: ${res.status} ${await res.text()}`.trim(), true);
-    }
-    const result = await res.json();
-    if (!result.ok) {
-      return textResult(`set_meta rejected: ${result.error}`, true);
-    }
+    await setMeta(brokerUrl, storedUuid, args.alias, args.status);
     return textResult("Meta updated.");
   } catch (e) {
     if (isConnectionFailure(e))
       return connectionFailureResult(brokerUrl, e);
-    return textResult(`set_meta failed: ${e instanceof Error ? e.message : String(e)}`, true);
+    return textResult(e instanceof Error ? e.message : String(e), true);
   }
 }
 function handleUnregister() {

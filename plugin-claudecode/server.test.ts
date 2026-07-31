@@ -1,13 +1,13 @@
 import { Database } from "bun:sqlite";
 import { afterEach, beforeEach, expect, spyOn, test } from "bun:test";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { ENV_BROKER_TOKEN, ENV_BROKER_URL } from "../client-core/env";
 import { type Es256KeyPair, generateEs256KeyPair, signToken } from "../src/auth/keys";
 import { createJwtVerifier } from "../src/auth/token";
 import { createWebAuth, type WebAuth } from "../src/auth/web-auth";
 import { startServer } from "../src/server";
 import { runDomainMigrations } from "../src/store/migrations";
 import { createRoomStore, type RoomStore } from "../src/store/rooms";
-import { ENV_BROKER_TOKEN, ENV_BROKER_URL } from "./env";
 import { handleRegister, handleSendRoom, handleUnregister } from "./server";
 
 const TEST_SECRET = "test-only-secret-plugin-send-room";

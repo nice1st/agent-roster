@@ -45,3 +45,9 @@ test("missingEnvMessage는 빠진 변수명만 나열한다", () => {
     "ROSTER_BROKER_URL, ROSTER_BROKER_TOKEN 환경변수가 필요하다 — CC를 띄운 셸에 export 후 재시작",
   );
 });
+
+test("missingEnvMessage는 클라이언트명을 받아 안내 문구에 싣는다", () => {
+  expect(missingEnvMessage(["ROSTER_BROKER_URL"], "OpenCode")).toBe(
+    "ROSTER_BROKER_URL 환경변수가 필요하다 — OpenCode를 띄운 셸에 export 후 재시작",
+  );
+});

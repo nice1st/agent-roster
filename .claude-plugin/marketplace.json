@@ -10,7 +10,7 @@
   "plugins": [
     {
       "name": "roster",
-      "source": "./plugin",
+      "source": "./plugin-claudecode",
       "description": "Messaging broker plugin for coding agents. 1:1 chat and rooms.",
       "category": "collaboration",
       "tags": ["agents", "messaging", "broker", "collaboration"]

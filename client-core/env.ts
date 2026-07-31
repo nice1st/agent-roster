@@ -12,6 +12,6 @@ export function readEnv(name: string): string | undefined {
   return isConfigured(value) ? value : undefined;
 }
 
-export function missingEnvMessage(names: string[]): string {
-  return `${names.join(", ")} 환경변수가 필요하다 — CC를 띄운 셸에 export 후 재시작`;
+export function missingEnvMessage(names: string[], client = "CC"): string {
+  return `${names.join(", ")} 환경변수가 필요하다 — ${client}를 띄운 셸에 export 후 재시작`;
 }

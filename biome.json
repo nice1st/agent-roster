@@ -6,7 +6,7 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**", "!plugin/dist"]
+    "includes": ["**", "!plugin-claudecode/dist"]
   },
   "formatter": {
     "enabled": true,

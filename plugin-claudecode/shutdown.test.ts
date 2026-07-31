@@ -1,6 +1,6 @@
 import { expect, mock, test } from "bun:test";
 import { EventEmitter } from "node:events";
-import type { BrokerConnection } from "./broker-client";
+import type { BrokerConnection } from "../client-core/broker-client";
 import { createShutdown, wireShutdown } from "./server";
 
 function setUp(conn: BrokerConnection | null) {

@@ -2,8 +2,8 @@ import { expect, test } from "bun:test";
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { ENV_BROKER_TOKEN, ENV_BROKER_URL } from "../client-core/env";
 import rootPackageJson from "../package.json";
-import { ENV_BROKER_TOKEN, ENV_BROKER_URL } from "./env";
 import pluginPackageJson from "./package.json";
 
 const REPO_ROOT = join(import.meta.dir, "..");
@@ -25,7 +25,7 @@ test("marketplace.json은 유효한 JSON이고 name·owner·plugins를 갖는다
 });
 
 test("plugin.json은 유효한 JSON이고 name·version·mcpServers를 갖는다", async () => {
-  const manifest = (await readJson("plugin/.claude-plugin/plugin.json")) as {
+  const manifest = (await readJson("plugin-claudecode/.claude-plugin/plugin.json")) as {
     name?: string;
     version?: string;
     mcpServers?: Record<string, unknown>;
@@ -45,7 +45,7 @@ test("marketplace.json의 plugins[0].source 경로가 실제 존재한다", asyn
 });
 
 test("plugin.json의 name·version이 plugin/package.json과 일치한다", async () => {
-  const manifest = (await readJson("plugin/.claude-plugin/plugin.json")) as {
+  const manifest = (await readJson("plugin-claudecode/.claude-plugin/plugin.json")) as {
     name?: string;
     version?: string;
   };
@@ -54,22 +54,22 @@ test("plugin.json의 name·version이 plugin/package.json과 일치한다", asyn
 });
 
 test("plugin.json의 env 키들이 plugin/env.ts의 상수 값과 일치한다", async () => {
-  const manifest = (await readJson("plugin/.claude-plugin/plugin.json")) as {
+  const manifest = (await readJson("plugin-claudecode/.claude-plugin/plugin.json")) as {
     mcpServers: { roster: { env?: Record<string, string> } };
   };
   const envKeys = Object.keys(manifest.mcpServers.roster.env ?? {});
   expect(envKeys.sort()).toEqual([ENV_BROKER_TOKEN, ENV_BROKER_URL].sort());
 });
 
-test("plugin/package.json의 sdk 버전이 루트 package.json의 sdk 버전과 일치한다", () => {
+test("plugin-claudecode/package.json의 sdk 버전이 루트 package.json의 sdk 버전과 일치한다", () => {
   expect(pluginPackageJson.dependencies["@modelcontextprotocol/sdk"]).toBe(
     rootPackageJson.dependencies["@modelcontextprotocol/sdk"],
   );
 });
 
 test("plugin.json의 version이 plugin/server.ts의 Server version과 일치한다", async () => {
-  const manifest = (await readJson("plugin/.claude-plugin/plugin.json")) as { version?: string };
-  const serverSource = await readFile(join(REPO_ROOT, "plugin/server.ts"), "utf-8");
+  const manifest = (await readJson("plugin-claudecode/.claude-plugin/plugin.json")) as { version?: string };
+  const serverSource = await readFile(join(REPO_ROOT, "plugin-claudecode/server.ts"), "utf-8");
   const match = serverSource.match(/name:\s*"agent-roster-channel",\s*version:\s*"([^"]+)"/);
   expect(match?.[1]).toBe(manifest.version);
 });

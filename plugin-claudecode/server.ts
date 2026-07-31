@@ -3,9 +3,19 @@ import { hostname } from "node:os";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
-import { type BrokerConnection, registerWithBroker } from "./broker-client";
-import { toChannelNotification } from "./channel";
-import { ENV_BROKER_TOKEN, ENV_BROKER_URL, missingEnvMessage, readEnv } from "./env";
+import {
+  formatGroups,
+  formatPeers,
+  listGroups,
+  listPeers,
+  sendMessage,
+  sendRoom,
+  setGroups,
+  setMeta,
+} from "../client-core/api";
+import { type BrokerConnection, registerWithBroker } from "../client-core/broker-client";
+import { toChannelNotification } from "../client-core/channel";
+import { ENV_BROKER_TOKEN, ENV_BROKER_URL, missingEnvMessage, readEnv } from "../client-core/env";
 
 const mcp = new Server(
   { name: "agent-roster-channel", version: "0.0.1" },
@@ -204,22 +214,11 @@ async function handleSendMessage(args: { to_id?: string; message?: string; skill
   }
 
   try {
-    const res = await fetch(new URL("/send", brokerUrl), {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ from: storedUuid, to: to_id, message, ...(skill !== undefined ? { skill } : {}) }),
-    });
-    if (!res.ok) {
-      return textResult(`send failed: ${res.status} ${await res.text()}`.trim(), true);
-    }
-    const result = (await res.json()) as { ok: boolean; error?: string };
-    if (!result.ok) {
-      return textResult(`Send rejected: ${result.error}`, true);
-    }
+    await sendMessage(brokerUrl, storedUuid, to_id, message, skill);
     return textResult(`Delivered to ${to_id}.`);
   } catch (e) {
     if (isConnectionFailure(e)) return connectionFailureResult(brokerUrl, e);
-    return textResult(`send_message failed: ${e instanceof Error ? e.message : String(e)}`, true);
+    return textResult(e instanceof Error ? e.message : String(e), true);
   }
 }
 
@@ -237,22 +236,11 @@ export async function handleSendRoom(args: { room_id?: string; message?: string 
   }
 
   try {
-    const res = await fetch(new URL("/room-send", brokerUrl), {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ from: storedUuid, room: room_id, message }),
-    });
-    if (!res.ok) {
-      return textResult(`send_room failed: ${res.status} ${await res.text()}`.trim(), true);
-    }
-    const result = (await res.json()) as { ok: boolean; error?: string };
-    if (!result.ok) {
-      return textResult(`send_room rejected: ${result.error}`, true);
-    }
+    await sendRoom(brokerUrl, storedUuid, room_id, message);
     return textResult(`Delivered to room ${room_id}.`);
   } catch (e) {
     if (isConnectionFailure(e)) return connectionFailureResult(brokerUrl, e);
-    return textResult(`send_room failed: ${e instanceof Error ? e.message : String(e)}`, true);
+    return textResult(e instanceof Error ? e.message : String(e), true);
   }
 }
 
@@ -266,29 +254,10 @@ async function handleListPeers() {
   }
 
   try {
-    const res = await fetch(new URL("/peers", brokerUrl), {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ from: storedUuid }),
-    });
-    if (!res.ok) {
-      return textResult(`list_peers failed: ${res.status} ${await res.text()}`.trim(), true);
-    }
-    const result = (await res.json()) as {
-      ok: boolean;
-      error?: string;
-      peers?: { uuid: string; meta: { alias?: string; status?: string } }[];
-    };
-    if (!result.ok) {
-      return textResult(`list_peers rejected: ${result.error}`, true);
-    }
-    const peers = result.peers ?? [];
-    if (peers.length === 0) return textResult("No peers visible.");
-    const lines = peers.map((p) => `${p.uuid}  alias=${p.meta.alias ?? "-"}  status=${p.meta.status ?? "-"}`);
-    return textResult(lines.join("\n"));
+    return textResult(formatPeers(await listPeers(brokerUrl, storedUuid)));
   } catch (e) {
     if (isConnectionFailure(e)) return connectionFailureResult(brokerUrl, e);
-    return textResult(`list_peers failed: ${e instanceof Error ? e.message : String(e)}`, true);
+    return textResult(e instanceof Error ? e.message : String(e), true);
   }
 }
 
@@ -305,22 +274,11 @@ async function handleSetGroups(args: { groups?: string[] }) {
   }
 
   try {
-    const res = await fetch(new URL("/set-groups", brokerUrl), {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ from: storedUuid, groups: args.groups }),
-    });
-    if (!res.ok) {
-      return textResult(`set_groups failed: ${res.status} ${await res.text()}`.trim(), true);
-    }
-    const result = (await res.json()) as { ok: boolean; error?: string };
-    if (!result.ok) {
-      return textResult(`set_groups rejected: ${result.error}`, true);
-    }
+    await setGroups(brokerUrl, storedUuid, args.groups);
     return textResult("Groups updated.");
   } catch (e) {
     if (isConnectionFailure(e)) return connectionFailureResult(brokerUrl, e);
-    return textResult(`set_groups failed: ${e instanceof Error ? e.message : String(e)}`, true);
+    return textResult(e instanceof Error ? e.message : String(e), true);
   }
 }
 
@@ -334,31 +292,10 @@ async function handleListGroups() {
   }
 
   try {
-    const res = await fetch(new URL("/groups", brokerUrl), {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ from: storedUuid }),
-    });
-    if (!res.ok) {
-      return textResult(`list_groups failed: ${res.status} ${await res.text()}`.trim(), true);
-    }
-    const result = (await res.json()) as {
-      ok: boolean;
-      error?: string;
-      member_of?: { id: string; name: string }[];
-      exposure?: "follow" | string[];
-      exposed?: string[];
-    };
-    if (!result.ok) {
-      return textResult(`list_groups rejected: ${result.error}`, true);
-    }
-    const memberOf = (result.member_of ?? []).map((g) => `${g.id} (${g.name})`).join(", ") || "-";
-    const exposure = result.exposure === "follow" ? "follow" : `[${(result.exposure ?? []).join(", ")}]`;
-    const exposed = (result.exposed ?? []).join(", ") || "-";
-    return textResult(`member_of: ${memberOf}\nexposure: ${exposure}\nexposed: ${exposed}`);
+    return textResult(formatGroups(await listGroups(brokerUrl, storedUuid)));
   } catch (e) {
     if (isConnectionFailure(e)) return connectionFailureResult(brokerUrl, e);
-    return textResult(`list_groups failed: ${e instanceof Error ? e.message : String(e)}`, true);
+    return textResult(e instanceof Error ? e.message : String(e), true);
   }
 }
 
@@ -378,22 +315,11 @@ async function handleSetMeta(args: { alias?: string; status?: string }) {
   }
 
   try {
-    const res = await fetch(new URL("/set-meta", brokerUrl), {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ from: storedUuid, alias: args.alias, status: args.status }),
-    });
-    if (!res.ok) {
-      return textResult(`set_meta failed: ${res.status} ${await res.text()}`.trim(), true);
-    }
-    const result = (await res.json()) as { ok: boolean; error?: string };
-    if (!result.ok) {
-      return textResult(`set_meta rejected: ${result.error}`, true);
-    }
+    await setMeta(brokerUrl, storedUuid, args.alias, args.status);
     return textResult("Meta updated.");
   } catch (e) {
     if (isConnectionFailure(e)) return connectionFailureResult(brokerUrl, e);
-    return textResult(`set_meta failed: ${e instanceof Error ? e.message : String(e)}`, true);
+    return textResult(e instanceof Error ? e.message : String(e), true);
   }
 }
 
