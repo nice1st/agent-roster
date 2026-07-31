@@ -114,3 +114,28 @@
 - **정체성 부재** — 정체성이 호스트명 기반 `machine:alias` 메모리 키뿐(플러그인이 자칭). 브로커 발급 식별자·소유(user)·소유 검증 개념 없음.
 - **팬아웃 부재** — send는 1:1 유니캐스트만.
 - **연결 위생 부재** — 방어가 keepalive 실패 시 삭제 하나뿐. 연결 수 상한·연결별 큐 상한·유휴 타임아웃 없음.
+
+## 6. 클라이언트 확장 — OpenCode·Codex가 브로커 클라이언트가 될 수 있는가 (원문 검증, 2026-07-31)
+
+CC 외 클라이언트의 관건 두 가지: (A) 아웃바운드 — 그 도구의 모델이 MCP 도구를 부를 수 있는가. (B) 인바운드 — 외부 메시지를 진행 중인 세션에 밀어넣어 모델이 자발 반응하게 할 수단이 있는가. 소스 원문 기준(OpenCode v1.18.10 / Codex rust-v0.146.0), 실행 검증은 아님.
+
+| 항목 | OpenCode | Codex CLI |
+|------|----------|-----------|
+| A. 아웃바운드 | 된다 — stdio MCP + 플러그인 자체 도구 | 된다 — `~/.codex/config.toml` `[mcp_servers.*]` |
+| B. 인바운드 | **된다** — 플러그인이 in-process API로 `session.prompt` 주입 | **조건부** — app-server 데몬 모드에서만(`turn/start`·`turn/steer`). 기본(embedded) 모드는 불가 |
+| MCP 서버발 알림 → 대화 노출 | 안 된다 (의도적 비활성 — 소스 주석·이슈 확인) | 안 된다 (로그로만 소비) |
+
+### OpenCode — 권장 구조: 플러그인 하나로 양방향
+
+- MCP는 인스턴스(프로젝트)당 1회 spawn·전 세션 공유(`packages/opencode/src/mcp/index.ts`) — CC처럼 세션마다 뜨지 않아 MCP만으로는 세션 단위 정체성 불가.
+- 플러그인 체계가 대안을 제공: `tool` 훅으로 자체 도구 정의(ctx에 `sessionID` 포함), 플러그인 입력의 `client`가 서버 전체 API를 in-process로 직결(`Server.Default().app.fetch`) — 기본 TUI가 TCP를 안 열어도 동작.
+- 인바운드: 플러그인이 브로커 SSE를 구독하고 `POST /session/:id/message`(또는 `prompt_async`)로 주입. busy 세션에도 안전 — prompt는 저장 후 루프 합류라 진행 중 턴 뒤에 자연 처리.
+- 미실측 1건: 플러그인발 주입이 TUI 화면에 즉시 렌더되는지.
+- 결정 필요: 에이전트 등록 단위 — 플러그인 상태가 인스턴스당 1개라 세션/인스턴스 중 선택해야 한다.
+
+### Codex — 권장 구조: 아웃바운드 즉시, 인바운드는 데몬 실측 후 조건부
+
+- MCP 설정은 전역이지만 런타임은 세션(스레드)별 spawn — CC와 같은 모델이라 기존 roster MCP 서버가 거의 그대로 붙는다. CC 플러그인과 유사한 "Agent Plugins"(plugin.json + skills + mcp.json) 패키징도 존재.
+- 인바운드 유일 경로: `codex app-server`(JSON-RPC, CLI 도움말에 [experimental] 표기) 데몬 + unix socket. `turn/start`(입력 추가+생성)·`turn/steer`(진행 중 턴에 끼워넣기)·`thread/inject_items`(히스토리만 추가). TUI는 데몬 소켓이 있으면 자동으로 붙는다 — 데몬 없이(기본) 뜨면 embedded라 외부에서 닿을 수단이 전혀 없다.
+- 훅(`UserPromptSubmit` 등 11종)은 턴 경계에서 컨텍스트 주입만 가능 — 자발 반응은 못 만든다. `notify`는 단방향(코덱스→외부).
+- 미실측 1건: 데몬 상시 운용 + 외부 연결의 `turn/start` 주입을 TUI가 렌더하는지 end-to-end. 이 스모크 통과 전에는 인바운드를 지원 목록에 올리지 않는다.
