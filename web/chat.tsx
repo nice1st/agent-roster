@@ -1,5 +1,7 @@
 // EventSource는 GET+쿠키만 지원하고, SSE 프레임에 event: 필드가 없어 기본 message 이벤트로 온다.
 import { useEffect, useRef, useState } from "react";
+import { senderColor } from "./sender-color";
+import { useStickToBottom } from "./use-stick-to-bottom";
 
 interface ChatMessage {
   from: string;
@@ -23,6 +25,7 @@ export function ChatPanel({ peerUuid, peerLabel, onClose }: ChatPanelProps) {
   const [error, setError] = useState<string | null>(null);
   const sourceRef = useRef<EventSource | null>(null);
   const myUuidRef = useRef<string | null>(null);
+  const { logRef, onScroll } = useStickToBottom(messages);
 
   function connect(resumeUuid?: string) {
     setState("connecting");
@@ -102,14 +105,24 @@ export function ChatPanel({ peerUuid, peerLabel, onClose }: ChatPanelProps) {
       {state === "connecting" && <p>연결 중…</p>}
       {error !== null && <p role="alert">{error}</p>}
 
-      <ul role="log">
-        {messages.map((m, i) => (
-          // biome-ignore lint/suspicious/noArrayIndexKey: 기록되지 않는 화면용 로그라 인덱스로 충분하다.
-          <li key={i}>
-            <strong>{m.from === myUuid ? "me" : m.from}</strong>:{" "}
-            <span style={{ whiteSpace: "pre-wrap" }}>{m.message}</span>
-          </li>
-        ))}
+      <ul
+        role="log"
+        ref={logRef}
+        onScroll={onScroll}
+        style={{ maxHeight: "60vh", overflowY: "auto", listStyle: "none", paddingLeft: 0 }}
+      >
+        {messages.map((m, i) => {
+          const grouped = i > 0 && messages[i - 1]?.from === m.from;
+          return (
+            // biome-ignore lint/suspicious/noArrayIndexKey: 기록되지 않는 화면용 로그라 인덱스로 충분하다.
+            <li key={i} style={{ marginTop: grouped ? "0.125rem" : "0.75rem" }}>
+              {!grouped && (
+                <strong style={{ color: senderColor(m.from) }}>{m.from === myUuid ? "me" : peerLabel}</strong>
+              )}
+              <span style={{ whiteSpace: "pre-wrap", display: "block" }}>{m.message}</span>
+            </li>
+          );
+        })}
       </ul>
 
       <label htmlFor="chat-draft">메시지 입력</label>

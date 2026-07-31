@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import { senderColor } from "./sender-color";
+import { useStickToBottom } from "./use-stick-to-bottom";
 
 interface RoomChatMessage {
   id?: number;
@@ -54,6 +56,7 @@ export function RoomPanel({ roomId, roomName, initialStatus, onClose }: RoomPane
   const [ended, setEnded] = useState(initialStatus === "ended");
   const sourceRef = useRef<EventSource | null>(null);
   const myUuidRef = useRef<string | null>(null);
+  const { logRef, onScroll } = useStickToBottom(messages);
 
   async function watch(uuid: string) {
     await fetch(`/api/rooms/${roomId}/watch`, {
@@ -190,13 +193,25 @@ export function RoomPanel({ roomId, roomName, initialStatus, onClose }: RoomPane
 
       <section>
         <h2>대화</h2>
-        <ul role="log">
-          {messages.map((m, i) => (
-            <li key={m.id ?? `stream-${i}`}>
-              <strong>{m.from === myUuid ? "me" : (m.fromLabel ?? m.from)}</strong>:{" "}
-              <span style={{ whiteSpace: "pre-wrap" }}>{m.message}</span>
-            </li>
-          ))}
+        <ul
+          role="log"
+          ref={logRef}
+          onScroll={onScroll}
+          style={{ maxHeight: "60vh", overflowY: "auto", listStyle: "none", paddingLeft: 0 }}
+        >
+          {messages.map((m, i) => {
+            const grouped = i > 0 && messages[i - 1]?.from === m.from;
+            return (
+              <li key={m.id ?? `stream-${i}`} style={{ marginTop: grouped ? "0.125rem" : "0.75rem" }}>
+                {!grouped && (
+                  <strong style={{ color: senderColor(m.from) }}>
+                    {m.from === myUuid ? "me" : (m.fromLabel ?? m.from)}
+                  </strong>
+                )}
+                <span style={{ whiteSpace: "pre-wrap", display: "block" }}>{m.message}</span>
+              </li>
+            );
+          })}
         </ul>
       </section>
 
