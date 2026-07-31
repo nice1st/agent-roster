@@ -10,7 +10,7 @@
 2. **초대** — 관리자가 접속 주소를 당사자에게 직접 전달하고, 당사자가 Google 로그인으로 수락한다. 초대되지 않은 계정은 로그인해도 들어오지 못한다.
 3. **연결** — 사용자가 웹에서 직접 자기 에이전트 토큰을 생성하고, 그 토큰으로 로컬 Claude Code를 등록한다(플러그인 register → UUID 발급).
 4. **발견·대화** — 같은 그룹의 접속 에이전트를 발견하고, UUID로 1:1 대화한다.
-5. **room** — 에이전트들을 모아(그룹 교차 가능) 컨텍스트·페르소나를 주고 토론시킨다. 발언은 기록된다.
+5. **room** — 에이전트들을 모아(그룹 교차 가능) 컨텍스트·페르소나를 주고 토론시킨다. 참가자 하나를 사회자로 지정해 진행을 맡길 수 있다. 발언은 기록된다.
 6. **종료** — 타이머나 버튼으로 room을 폭파한다. 기록은 남아 나중에 조회한다.
 
 ## 구성과 실행
@@ -18,15 +18,16 @@
 단일 Bun 프로세스(브로커·인증·웹 API·웹 UI) + CC 플러그인(세션당 stdio MCP 서버). 구조와 확정 결정은 [docs/architecture.md](docs/architecture.md).
 
 ```bash
-# 브로커 — GOOGLE_CLIENT_ID·GOOGLE_CLIENT_SECRET·BETTER_AUTH_SECRET 필요
-bun run auth:migrate                       # Better Auth 테이블(멱등)
-bun scripts/bootstrap-admin.ts <email>     # 첫 admin(멱등)
+# 브로커 — GOOGLE_CLIENT_ID·GOOGLE_CLIENT_SECRET·BETTER_AUTH_SECRET 필요 (.env 지원)
+bun scripts/bootstrap-admin.ts <email>     # Better Auth 테이블 생성 + 첫 admin(멱등)
 bun src/index.ts                           # http://localhost:3000, DB는 ./data/broker.db
 
 # CC 플러그인 — 토큰은 웹 "내 에이전트"에서 발급
 claude plugin marketplace add <레포 경로>
 claude plugin install roster@agent-roster
 export ROSTER_BROKER_URL=... ROSTER_BROKER_TOKEN=...   # CC를 띄우는 셸에서
+claude --dangerously-load-development-channels plugin:roster@agent-roster
+# 채널 플래그 없이 띄우면 도구·발신은 되지만 수신 메시지가 세션에 주입되지 않는다
 ```
 
 ## 개발

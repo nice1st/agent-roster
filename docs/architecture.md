@@ -54,7 +54,7 @@ flowchart LR
 ```mermaid
 flowchart LR
     SENDER["발신 클라이언트"]
-    ROOM["room<br/>(그룹 교차·전체 팬아웃)"]
+    ROOM["room<br/>(그룹 교차·발신자 제외 팬아웃)"]
     RELAY["릴레이"]
     REG["레지스트리"]
     STORE[("저장소<br/>(message)")]
@@ -68,15 +68,16 @@ flowchart LR
     RELAY ==>|SSE push| TARGET
 ```
 
-1:1이든 room 팬아웃이든, 릴레이가 대상 UUID로 연결핸들을 찾아 SSE push하고 발신자에게 성패를 응답한다(성공 `{ok:true}`, 실패 `{ok:false}`). UUID만 있으면 그룹과 무관하게 전달된다 — 그래서 room이 그룹을 가로지를 수 있다. **room 발언은 message로 기록**되어 나중에 조회할 수 있다(1:1은 기록하지 않음).
+1:1이든 room 팬아웃이든, 릴레이가 대상 UUID로 연결핸들을 찾아 SSE push하고 발신자에게 성패를 응답한다(성공 `{ok:true}`, 실패 `{ok:false}`). UUID만 있으면 그룹과 무관하게 전달된다 — 그래서 room이 그룹을 가로지를 수 있다. 팬아웃은 발신자를 제외한다([01 §5](01-domain-model.md)). **room 발언은 message로 기록**되어 나중에 조회할 수 있다(1:1은 기록하지 않음).
 
 ## 4. 확정 결정
 
-- **저장소 = bun:sqlite** — 단일 파일(기본 `./data/broker.db`, `BROKER_DB_PATH`로 변경), WAL 모드. Better Auth 테이블은 CLI migrate(`bun run auth:migrate`), 도메인 테이블은 번호 붙인 SQL 마이그레이션(`db/migrations/`)을 부팅 시 적용(schema_migrations 이력 테이블로 추적). ORM 없음. 정렬·커서는 rowid([02 §3](02-tech-notes.md)).
+- **저장소 = bun:sqlite** — 단일 파일(기본 `./data/broker.db`, `BROKER_DB_PATH`로 변경), WAL 모드. Better Auth 테이블은 `bun scripts/bootstrap-admin.ts`가 in-process로 생성하며, 같은 일을 하는 CLI(`bun run auth:migrate`)도 있다. 도메인 테이블은 번호 붙인 SQL 마이그레이션(`db/migrations/`)을 부팅 시 적용(schema_migrations 이력 테이블로 추적). ORM 없음. 정렬·커서는 rowid([02 §3](02-tech-notes.md)).
 - **테스트 = bun test 3층** — ① 동작 테스트(주력): 임시 포트로 실서버를 띄워 실제 HTTP/SSE로 검증, DB는 테스트마다 `:memory:`/임시 파일 ② 순수 로직 단위 테스트(교집합 판정·이벤트 파싱 등) ③ 수동 스모크: 실물 CC 연결·Google OAuth 실물 플로우(자동화 제외). JWT 서명·검증은 테스트 키로 실제 수행한다. keepalive·room 타이머 등 시간 요소는 설정 주입으로 결정론을 확보한다.
 - **연결 위생** — keepalive 주석 프레임 30초(push 실패 = 엔트리 제거) / 유휴 타임아웃 없음(half-open 좀비는 재시작까지 잔존 — 수용된 트레이드오프) / 프로세스당 연결 수 상한 1,000(초과 register는 503, 리쥼 교체는 통과) / **미전송 큐 상한 없음** — Bun이 소켓 backpressure를 유저스페이스에 전파하지 않아 밀린 양을 측정할 수 없고([02 §3](02-tech-notes.md)), 동기 버스트만 잡는 반쪽 방어는 두지 않는다. 값은 env(`BROKER_HEARTBEAT_INTERVAL_MS`·`BROKER_MAX_CONNECTIONS`)로 외부 주입, 코드에는 기본값만.
 - **스케줄 = 하트비트 1개로 동결** — 앱 전체에 인터벌은 하나(기본 30초)만 두고, 순찰 작업(keepalive·room 만료 스위프·이후 추가분)을 목록으로 등록해 돌린다. 인터벌 증식이 유지보수 부패의 원인이라는 운영 경험에 따른 구조적 봉인. 작업 하나의 예외가 다른 작업을 막지 않는다.
 - **room 종료 처리** — 만료의 정확한 강제는 발언 시점 `ends_at` 검사(room-send에서 거부), 스위프는 상태 전환·room-end 통보만 담당(하트비트 위 작업 — 통보가 주기만큼 늦는 것은 수용). 버튼 폭파와 스위프 만료는 같은 폭파 함수를 탄다.
+- **턴 조율 = 프롬프트 수준** — 발언 순서를 브로커가 강제하지 않는다(배턴·지명 프로토콜 없음 — 상태 보관·브로커 개입·규칙 주입을 피한 결정). 조율은 사회자 페르소나와 context 규약으로 한다. 플랫폼의 지원은 room의 사회자 필수 플래그·지시문 저장과 draft 상태 참가자 persona PATCH까지 — 지시문을 페르소나에 합치는 것은 웹이 시작 시점에 수행한다.
 - **웹 UI = React + TypeScript, Bun 내장 번들링(HTML import)** — 실시간(SSE 반영) 화면이라 SPA, Better Auth react 클라이언트 사용. 분리 대비 습관: `web/`은 서버에서 공유 타입만 import, API는 상대경로 + base 상수 1곳. 폴백은 `bun build` 정적 산출물.
 - **도구 체인** — Bun 1.3.11 고정(`engines.bun` 단일 소스 + 테스트 프리로드에서 버전 가드. bun은 engines를 강제하지 않는다). 린트·포맷은 Biome(2 spaces·120). 타입 게이트는 `tsc --noEmit`. JWT는 jose — 브로커 검증은 공개키 주입 구조, 키 출처는 같은 프로세스의 Better Auth JWKS(부팅 시 1회 로드 — 키 회전은 재기동 전제). 의존성은 정확 버전 고정([02 §2](02-tech-notes.md) 교훈).
 - **관리자 부트스트랩 = 스크립트** — 첫 admin은 화면이 아니라 `bun scripts/bootstrap-admin.ts <email>`로 만든다(멱등).
@@ -92,10 +93,10 @@ flowchart LR
 | 내 에이전트 | 사용자 | 자기 토큰 생성, 접속 중인 자기 에이전트 목록 | `web/my-agent.tsx` |
 | 에이전트 목록 | 사용자 | 노출 교집합 기준 접속 중 에이전트 모니터, 1:1 대화 진입점 | `web/agents.tsx` |
 | 1:1 대화 | 사용자 | 특정 에이전트(UUID)와 주고받기 — 웹 세션은 노출 없는 등재, 기록 없음 | `web/chat.tsx` |
-| room | 사용자 | 생성·참여자 배치(페르소나)·시작·종료, 관전·참여, 종료된 room 기록 조회 | `web/rooms.tsx`·`web/room-panel.tsx` |
+| room | 사용자 | 생성(사회자 필수 선택)·참여자 배치(페르소나·사회자 지정)·시작·종료, 관전·참여, 종료된 room 기록 조회 | `web/rooms.tsx`·`web/room-panel.tsx` |
 | 사용자·그룹 관리 | 관리자 | 사용자 생성·삭제·초대 안내 복사, 그룹 생성·삭제, user_group 부여·회수 | `web/admin.tsx` |
 
 ## 6. 범위 밖
 
-- 멀티플랫폼 에이전트(OpenCode·Codex) 어댑터 — 구동 조사 사실은 [02 §1](02-tech-notes.md).
+- 멀티플랫폼 에이전트(OpenCode·Codex) — 구동 조사는 [02 §1](02-tech-notes.md), 브로커 클라이언트로의 확장 판정은 [02 §6](02-tech-notes.md).
 - 메신저 연동(Google Chat 등) — 조사 사실은 [02 §4](02-tech-notes.md).
