@@ -38,3 +38,13 @@ test("마이그레이션이 rooms 3테이블을 만든다", () => {
     .map((r) => r.name);
   expect(tables).toEqual(expect.arrayContaining(["rooms", "room_participants", "messages"]));
 });
+
+test("마이그레이션이 rooms에 moderator_required·moderator_instruction 컬럼을 추가한다", () => {
+  const db = new Database(":memory:");
+  runDomainMigrations(db);
+  const columns = db
+    .query<{ name: string }, []>("PRAGMA table_info(rooms)")
+    .all()
+    .map((r) => r.name);
+  expect(columns).toEqual(expect.arrayContaining(["moderator_required", "moderator_instruction"]));
+});

@@ -75,7 +75,10 @@ export function createRoomsApiRoutes(
           typeof body.duration_minutes === "number" && body.duration_minutes > 0
             ? Math.floor(body.duration_minutes)
             : 0;
-        const room = rooms.create(userId, body.name, context, durationMinutes);
+        const moderatorRequired = body.moderator_required === true;
+        const moderatorInstruction =
+          typeof body.moderator_instruction === "string" ? body.moderator_instruction : undefined;
+        const room = rooms.create(userId, body.name, context, durationMinutes, moderatorRequired, moderatorInstruction);
         return Response.json({ room }, { status: 201 });
       }),
       GET: requireSession(webAuth, async (_req, userId) => {
@@ -123,6 +126,18 @@ export function createRoomsApiRoutes(
     },
 
     "/api/rooms/:id/participants/:uuid": {
+      PATCH: requireSession(webAuth, async (req, userId) => {
+        const roomId = roomIdFromPath(req, 3);
+        const agentUuid = roomIdFromPath(req, 1);
+        return requireOwnedRoom(userId, roomId, async (room) => {
+          if (room.status !== "draft") return jsonError(400, "room not in draft");
+          const body = await parseJsonBody(req);
+          if (body === null || typeof body.persona !== "string") return jsonError(400, "persona required");
+          const updated = rooms.updateParticipantPersona(roomId, agentUuid, body.persona);
+          if (!updated) return jsonError(404, "participant not found");
+          return Response.json({ ok: true });
+        });
+      }),
       DELETE: requireSession(webAuth, async (req, userId) => {
         const roomId = roomIdFromPath(req, 3);
         const agentUuid = roomIdFromPath(req, 1);

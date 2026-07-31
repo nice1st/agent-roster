@@ -11,6 +11,16 @@ export interface Room {
   ends_at: string | null;
   created_by: string;
   created_at: string;
+  moderator_required: boolean;
+  moderator_instruction: string | null;
+}
+
+interface RoomRow extends Omit<Room, "moderator_required"> {
+  moderator_required: number;
+}
+
+function toRoom(row: RoomRow): Room {
+  return { ...row, moderator_required: row.moderator_required !== 0 };
 }
 
 export interface RoomParticipant {
@@ -32,12 +42,28 @@ export interface Message {
 
 export function createRoomStore(db: Database) {
   return {
-    create(createdBy: string, name: string, context: string | undefined, durationMinutes: number): Room {
+    create(
+      createdBy: string,
+      name: string,
+      context: string | undefined,
+      durationMinutes: number,
+      moderatorRequired = false,
+      moderatorInstruction?: string,
+    ): Room {
       const id = crypto.randomUUID();
       const createdAt = new Date().toISOString();
       db.prepare(
-        "INSERT INTO rooms (id, name, context, status, duration_minutes, ends_at, created_by, created_at) VALUES (?, ?, ?, 'draft', ?, NULL, ?, ?)",
-      ).run(id, name, context ?? null, durationMinutes, createdBy, createdAt);
+        "INSERT INTO rooms (id, name, context, status, duration_minutes, ends_at, created_by, created_at, moderator_required, moderator_instruction) VALUES (?, ?, ?, 'draft', ?, NULL, ?, ?, ?, ?)",
+      ).run(
+        id,
+        name,
+        context ?? null,
+        durationMinutes,
+        createdBy,
+        createdAt,
+        moderatorRequired ? 1 : 0,
+        moderatorInstruction ?? null,
+      );
       return {
         id,
         name,
@@ -47,15 +73,21 @@ export function createRoomStore(db: Database) {
         ends_at: null,
         created_by: createdBy,
         created_at: createdAt,
+        moderator_required: moderatorRequired,
+        moderator_instruction: moderatorInstruction ?? null,
       };
     },
 
     get(roomId: string): Room | null {
-      return db.query<Room, [string]>("SELECT * FROM rooms WHERE id = ?").get(roomId);
+      const row = db.query<RoomRow, [string]>("SELECT * FROM rooms WHERE id = ?").get(roomId);
+      return row === null ? null : toRoom(row);
     },
 
     listForUser(userId: string): Room[] {
-      return db.query<Room, [string]>("SELECT * FROM rooms WHERE created_by = ? ORDER BY created_at DESC").all(userId);
+      return db
+        .query<RoomRow, [string]>("SELECT * FROM rooms WHERE created_by = ? ORDER BY created_at DESC")
+        .all(userId)
+        .map(toRoom);
     },
 
     start(roomId: string): void {
@@ -80,8 +112,11 @@ export function createRoomStore(db: Database) {
 
     listExpired(nowIso: string): Room[] {
       return db
-        .query<Room, [string]>("SELECT * FROM rooms WHERE status = 'active' AND ends_at IS NOT NULL AND ends_at <= ?")
-        .all(nowIso);
+        .query<RoomRow, [string]>(
+          "SELECT * FROM rooms WHERE status = 'active' AND ends_at IS NOT NULL AND ends_at <= ?",
+        )
+        .all(nowIso)
+        .map(toRoom);
     },
 
     addParticipant(
@@ -94,6 +129,21 @@ export function createRoomStore(db: Database) {
       db.prepare(
         "INSERT INTO room_participants (room_id, agent_uuid, alias_snapshot, persona, output_instruction) VALUES (?, ?, ?, ?, ?)",
       ).run(roomId, agentUuid, aliasSnapshot ?? null, persona ?? null, outputInstruction ?? null);
+    },
+
+    updateParticipantPersona(roomId: string, agentUuid: string, persona: string): boolean {
+      const existing = db
+        .query<{ room_id: string }, [string, string]>(
+          "SELECT room_id FROM room_participants WHERE room_id = ? AND agent_uuid = ?",
+        )
+        .get(roomId, agentUuid);
+      if (existing === null) return false;
+      db.prepare("UPDATE room_participants SET persona = ? WHERE room_id = ? AND agent_uuid = ?").run(
+        persona,
+        roomId,
+        agentUuid,
+      );
+      return true;
     },
 
     removeParticipant(roomId: string, agentUuid: string): boolean {
