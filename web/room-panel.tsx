@@ -191,7 +191,8 @@ export function RoomPanel({ roomId, roomName, initialStatus, onClose }: RoomPane
       <ul>
         {messages.map((m, i) => (
           <li key={m.id ?? `stream-${i}`}>
-            <strong>{m.from === myUuid ? "me" : (m.fromLabel ?? m.from)}</strong>: {m.message}
+            <strong>{m.from === myUuid ? "me" : (m.fromLabel ?? m.from)}</strong>:{" "}
+            <span style={{ whiteSpace: "pre-wrap" }}>{m.message}</span>
           </li>
         ))}
       </ul>
@@ -199,10 +200,12 @@ export function RoomPanel({ roomId, roomName, initialStatus, onClose }: RoomPane
       {initialStatus === "active" && (
         <>
           <input
+            style={{ width: "100%", maxWidth: "48rem" }}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter") send();
+              // 한글 IME 조합 중 Enter는 keydown이 두 번 발화한다 — 조합 확정분은 무시해야 중복 발신이 없다.
+              if (e.key === "Enter" && !e.nativeEvent.isComposing) send();
             }}
             disabled={myUuid === null || ended}
             placeholder="메시지 입력"
