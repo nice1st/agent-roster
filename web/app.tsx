@@ -69,15 +69,17 @@ export function App() {
     <main>
       <h1>agent-roster</h1>
       <p>{session.user.email}</p>
-      <button type="button" onClick={() => setScreen("my-agent")}>
-        내 에이전트
-      </button>
-      <button type="button" onClick={() => setScreen("agents")}>
-        에이전트 목록
-      </button>
-      <button type="button" onClick={() => setScreen("rooms")}>
-        room
-      </button>
+      <nav>
+        <button type="button" onClick={() => setScreen("my-agent")}>
+          내 에이전트
+        </button>
+        <button type="button" onClick={() => setScreen("agents")}>
+          에이전트 목록
+        </button>
+        <button type="button" onClick={() => setScreen("rooms")}>
+          room
+        </button>
+      </nav>
       <button type="button" onClick={() => authClient.signOut()}>
         로그아웃
       </button>

@@ -117,8 +117,11 @@ export function RoomsPage({ onBack, onOpenRoom }: RoomsPageProps) {
 
       <section>
         <h2>새 room 만들기</h2>
-        <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="이름" />
+        <label htmlFor="room-new-name">이름</label>
+        <input id="room-new-name" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="이름" />
+        <label htmlFor="room-new-context">컨텍스트(선택)</label>
         <textarea
+          id="room-new-context"
           style={{ width: "100%", maxWidth: "48rem" }}
           value={newContext}
           onChange={(e) => setNewContext(e.target.value)}
@@ -129,7 +132,9 @@ export function RoomsPage({ onBack, onOpenRoom }: RoomsPageProps) {
             "발언 규칙: 첫 발언은 ○○부터, 첫 바퀴는 자기소개. 발언 끝에 다음 발언자를 호명하고, 호명되기 전에는 발언하지 않는다."
           }
         />
+        <label htmlFor="room-new-duration">지속 시간(분, 비우면 무제한)</label>
         <input
+          id="room-new-duration"
           value={newDuration}
           onChange={(e) => setNewDuration(e.target.value)}
           placeholder="지속 시간(분, 비우면 무제한)"
@@ -146,12 +151,16 @@ export function RoomsPage({ onBack, onOpenRoom }: RoomsPageProps) {
           </label>
         </p>
         {newModeratorRequired && (
-          <textarea
-            style={{ width: "100%", maxWidth: "48rem" }}
-            value={newModeratorNotice}
-            onChange={(e) => setNewModeratorNotice(e.target.value)}
-            rows={3}
-          />
+          <>
+            <label htmlFor="room-new-moderator-notice">사회자 안내문</label>
+            <textarea
+              id="room-new-moderator-notice"
+              style={{ width: "100%", maxWidth: "48rem" }}
+              value={newModeratorNotice}
+              onChange={(e) => setNewModeratorNotice(e.target.value)}
+              rows={3}
+            />
+          </>
         )}
         <button type="button" onClick={createRoom}>
           생성
@@ -164,12 +173,13 @@ export function RoomsPage({ onBack, onOpenRoom }: RoomsPageProps) {
           새로고침
         </button>
         <table>
+          <caption>내 room 목록</caption>
           <thead>
             <tr>
-              <th>이름</th>
-              <th>상태</th>
-              <th>종료 시각</th>
-              <th> </th>
+              <th scope="col">이름</th>
+              <th scope="col">상태</th>
+              <th scope="col">종료 시각</th>
+              <th scope="col"> </th>
             </tr>
           </thead>
           <tbody>
@@ -346,7 +356,8 @@ function RoomSetupPanel({
         ))}
       </ul>
 
-      <select value={selectedUuid} onChange={(e) => setSelectedUuid(e.target.value)}>
+      <label htmlFor="room-setup-agent-select">에이전트 선택</label>
+      <select id="room-setup-agent-select" value={selectedUuid} onChange={(e) => setSelectedUuid(e.target.value)}>
         <option value="">에이전트 선택</option>
         {agents.map((a) => (
           <option key={a.uuid} value={a.uuid}>
@@ -354,14 +365,18 @@ function RoomSetupPanel({
           </option>
         ))}
       </select>
+      <label htmlFor="room-setup-persona">페르소나(선택)</label>
       <textarea
+        id="room-setup-persona"
         style={{ width: "100%", maxWidth: "48rem" }}
         value={persona}
         onChange={(e) => setPersona(e.target.value)}
         rows={3}
         placeholder="페르소나(선택) — 이 에이전트가 room에서 맡을 역할·관점"
       />
+      <label htmlFor="room-setup-output-instruction">산출물 지시(선택)</label>
       <input
+        id="room-setup-output-instruction"
         value={outputInstruction}
         onChange={(e) => setOutputInstruction(e.target.value)}
         placeholder="산출물 지시(선택)"
@@ -384,12 +399,16 @@ function RoomSetupPanel({
         </label>
       </p>
       {moderatorUuid !== "" && (
-        <textarea
-          style={{ width: "100%", maxWidth: "48rem" }}
-          value={moderatorText}
-          onChange={(e) => setModeratorText(e.target.value)}
-          rows={6}
-        />
+        <>
+          <label htmlFor="room-setup-moderator-text">사회자 지시문</label>
+          <textarea
+            id="room-setup-moderator-text"
+            style={{ width: "100%", maxWidth: "48rem" }}
+            value={moderatorText}
+            onChange={(e) => setModeratorText(e.target.value)}
+            rows={6}
+          />
+        </>
       )}
 
       <p>

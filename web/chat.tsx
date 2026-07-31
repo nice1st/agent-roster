@@ -102,7 +102,7 @@ export function ChatPanel({ peerUuid, peerLabel, onClose }: ChatPanelProps) {
       {state === "connecting" && <p>연결 중…</p>}
       {error !== null && <p role="alert">{error}</p>}
 
-      <ul>
+      <ul role="log">
         {messages.map((m, i) => (
           // biome-ignore lint/suspicious/noArrayIndexKey: 기록되지 않는 화면용 로그라 인덱스로 충분하다.
           <li key={i}>
@@ -112,7 +112,9 @@ export function ChatPanel({ peerUuid, peerLabel, onClose }: ChatPanelProps) {
         ))}
       </ul>
 
+      <label htmlFor="chat-draft">메시지 입력</label>
       <input
+        id="chat-draft"
         style={{ width: "100%", maxWidth: "48rem" }}
         value={draft}
         onChange={(e) => setDraft(e.target.value)}

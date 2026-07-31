@@ -188,18 +188,23 @@ export function RoomPanel({ roomId, roomName, initialStatus, onClose }: RoomPane
         </ul>
       </section>
 
-      <ul>
-        {messages.map((m, i) => (
-          <li key={m.id ?? `stream-${i}`}>
-            <strong>{m.from === myUuid ? "me" : (m.fromLabel ?? m.from)}</strong>:{" "}
-            <span style={{ whiteSpace: "pre-wrap" }}>{m.message}</span>
-          </li>
-        ))}
-      </ul>
+      <section>
+        <h2>대화</h2>
+        <ul role="log">
+          {messages.map((m, i) => (
+            <li key={m.id ?? `stream-${i}`}>
+              <strong>{m.from === myUuid ? "me" : (m.fromLabel ?? m.from)}</strong>:{" "}
+              <span style={{ whiteSpace: "pre-wrap" }}>{m.message}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
 
       {initialStatus === "active" && (
         <>
+          <label htmlFor="room-panel-draft">메시지 입력</label>
           <input
+            id="room-panel-draft"
             style={{ width: "100%", maxWidth: "48rem" }}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}

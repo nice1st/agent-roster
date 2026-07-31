@@ -73,7 +73,8 @@ export function MyAgentPage({ onBack }: MyAgentPageProps) {
       {error !== null && <p role="alert">{error}</p>}
       {token !== null && (
         <div>
-          <textarea readOnly value={token} rows={4} style={{ width: "100%" }} />
+          <label htmlFor="my-agent-token">발급된 토큰</label>
+          <textarea id="my-agent-token" readOnly value={token} rows={4} style={{ width: "100%" }} />
           <button type="button" onClick={copyToken}>
             클립보드에 복사
           </button>
@@ -87,12 +88,13 @@ export function MyAgentPage({ onBack }: MyAgentPageProps) {
         새로고침
       </button>
       <table>
+        <caption>접속 중인 내 에이전트</caption>
         <thead>
           <tr>
-            <th>alias</th>
-            <th>status</th>
-            <th>machine</th>
-            <th>uuid</th>
+            <th scope="col">alias</th>
+            <th scope="col">status</th>
+            <th scope="col">machine</th>
+            <th scope="col">uuid</th>
           </tr>
         </thead>
         <tbody>

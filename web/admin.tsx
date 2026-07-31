@@ -135,19 +135,26 @@ export function AdminScreen() {
           </li>
         ))}
       </ul>
-      <input value={newGroupName} onChange={(e) => setNewGroupName(e.target.value)} placeholder="새 그룹 이름" />
+      <label htmlFor="admin-new-group-name">새 그룹 이름</label>
+      <input
+        id="admin-new-group-name"
+        value={newGroupName}
+        onChange={(e) => setNewGroupName(e.target.value)}
+        placeholder="새 그룹 이름"
+      />
       <button type="button" onClick={createGroup}>
         그룹 생성
       </button>
 
       <h3>사용자</h3>
       <table>
+        <caption>사용자 목록</caption>
         <thead>
           <tr>
-            <th>email</th>
-            <th>role</th>
-            <th>그룹</th>
-            <th> </th>
+            <th scope="col">email</th>
+            <th scope="col">role</th>
+            <th scope="col">그룹</th>
+            <th scope="col"> </th>
           </tr>
         </thead>
         <tbody>
@@ -175,7 +182,13 @@ export function AdminScreen() {
           ))}
         </tbody>
       </table>
-      <input value={newUserEmail} onChange={(e) => setNewUserEmail(e.target.value)} placeholder="새 사용자 email" />
+      <label htmlFor="admin-new-user-email">새 사용자 email</label>
+      <input
+        id="admin-new-user-email"
+        value={newUserEmail}
+        onChange={(e) => setNewUserEmail(e.target.value)}
+        placeholder="새 사용자 email"
+      />
       <button type="button" onClick={createUser}>
         사용자 생성
       </button>

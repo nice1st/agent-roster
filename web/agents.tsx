@@ -51,14 +51,15 @@ export function AgentsPage({ onBack, onChat }: AgentsPageProps) {
         {loading ? "새로고침 중…" : "새로고침"}
       </button>
       <table>
+        <caption>에이전트 목록</caption>
         <thead>
           <tr>
-            <th>alias</th>
-            <th>status</th>
-            <th>machine</th>
-            <th>owner</th>
-            <th>uuid</th>
-            <th> </th>
+            <th scope="col">alias</th>
+            <th scope="col">status</th>
+            <th scope="col">machine</th>
+            <th scope="col">owner</th>
+            <th scope="col">uuid</th>
+            <th scope="col"> </th>
           </tr>
         </thead>
         <tbody>
