@@ -76,15 +76,15 @@ export function App() {
   }
 
   function handleIncomingMessage(from: string, message: string, sentAt: string) {
-    setConversations((prev) =>
-      updateMap(prev, from, (existing) => {
-        const unread = !isDmSelected(from);
-        const appended = { from, message, sentAt };
-        return existing === undefined
-          ? { messages: [appended], unread, error: null }
-          : { ...existing, messages: [...existing.messages, appended], unread };
-      }),
-    );
+    setConversations((prev) => {
+      // 사용자가 연 대화의 상대만 수신한다 — 역방향(에이전트 선발화)은 도메인 밖이라 그 외 from은 버린다.
+      if (!prev.has(from)) return prev;
+      return updateMap(prev, from, (existing) => ({
+        ...(existing as Conversation),
+        messages: [...(existing as Conversation).messages, { from, message, sentAt }],
+        unread: !isDmSelected(from),
+      }));
+    });
   }
 
   function handleRoomMessage(
