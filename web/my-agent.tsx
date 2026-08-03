@@ -16,11 +16,7 @@ interface MyAgentListItem {
   meta: AgentMeta;
 }
 
-export interface MyAgentPageProps {
-  onBack: () => void;
-}
-
-export function MyAgentPage({ onBack }: MyAgentPageProps) {
+export function MyAgentPage() {
   const [token, setToken] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -62,7 +58,7 @@ export function MyAgentPage({ onBack }: MyAgentPageProps) {
   }, []);
 
   return (
-    <main>
+    <section>
       <h1>내 에이전트</h1>
       <p>
         발급한 토큰을 에이전트 플러그인의 env <code>BROKER_TOKEN</code>에 넣을 것.
@@ -75,7 +71,7 @@ export function MyAgentPage({ onBack }: MyAgentPageProps) {
         <div>
           <label htmlFor="my-agent-token">발급된 토큰</label>
           <textarea id="my-agent-token" readOnly value={token} rows={4} style={{ width: "100%" }} />
-          <button type="button" onClick={copyToken}>
+          <button type="button" className="secondary" onClick={copyToken}>
             클립보드에 복사
           </button>
           {copied && <span> 복사됨</span>}
@@ -84,7 +80,7 @@ export function MyAgentPage({ onBack }: MyAgentPageProps) {
 
       <h2>접속 중인 내 에이전트</h2>
       {listError !== null && <p role="alert">{listError}</p>}
-      <button type="button" onClick={reloadMyAgents}>
+      <button type="button" className="secondary" onClick={reloadMyAgents}>
         새로고침
       </button>
       <table>
@@ -108,12 +104,6 @@ export function MyAgentPage({ onBack }: MyAgentPageProps) {
           ))}
         </tbody>
       </table>
-
-      <p>
-        <button type="button" onClick={onBack}>
-          뒤로
-        </button>
-      </p>
-    </main>
+    </section>
   );
 }

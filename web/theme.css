@@ -1,5 +1,6 @@
 /* Bun 번들러가 link 두 개의 순서를 보장하지 않는다 — import로 Pico를 먼저 고정한다. */
-@import "./pico.classless.min.css";
+@import "./pico.min.css";
+@import "./layout.css";
 
 :root {
   --pico-font-family-sans-serif:
@@ -45,14 +46,6 @@
   --pico-primary-underline: rgba(165, 180, 252, 0.5);
   --pico-primary-focus: rgba(129, 140, 248, 0.375);
   --pico-primary-inverse: #fff;
-}
-
-/* Pico classless는 body>main만 컨테이너로 잡는다 — React #root 아래라 여기서 직접 잡는다. */
-#root > main {
-  width: 100%;
-  max-width: 1130px;
-  margin-inline: auto;
-  padding: calc(var(--pico-spacing) * 2) var(--pico-spacing);
 }
 
 nav {

@@ -81,7 +81,7 @@ flowchart LR
 - **room 종료 처리** — 만료의 정확한 강제는 발언 시점 `ends_at` 검사(room-send에서 거부), 스위프는 상태 전환·room-end 통보만 담당(하트비트 위 작업 — 통보가 주기만큼 늦는 것은 수용). 버튼 폭파와 스위프 만료는 같은 폭파 함수를 탄다.
 - **턴 조율 = 프롬프트 수준** — 발언 순서를 브로커가 강제하지 않는다(배턴·지명 프로토콜 없음 — 상태 보관·브로커 개입·규칙 주입을 피한 결정). 조율은 사회자 페르소나와 context 규약으로 한다. 플랫폼의 지원은 room의 사회자 필수 플래그·지시문 저장과 draft 상태 참가자 persona PATCH까지 — 지시문을 페르소나에 합치는 것은 웹이 시작 시점에 수행한다.
 - **웹 UI = React + TypeScript, Bun 내장 번들링(HTML import)** — 실시간(SSE 반영) 화면이라 SPA, Better Auth react 클라이언트 사용. 분리 대비 습관: `web/`은 서버에서 공유 타입만 import, API는 상대경로 + base 상수 1곳. 폴백은 `bun build` 정적 산출물.
-- **웹 스타일 = classless CSS(Pico v2) + 변수 오버라이드** — 클래스 없이 시맨틱 마크업이 스타일을 받고, 톤(primary 색·radius·폰트)과 레이아웃 보정(#root>main 컨테이너·nav)은 `web/theme.css`의 Pico CSS 변수 오버라이드로만 한다. 진입은 `index.html`의 링크 한 줄(`theme.css`)이고 Pico는 그 안에서 `@import` — Bun 번들러가 link 복수 개의 순서를 보장하지 않아서다. Pico는 CDN 대신 `web/pico.classless.min.css`로 셀프호스트 — 사내망·오프라인에서도 UI 유지.
+- **웹 스타일 = Pico v2 + 변수 오버라이드 + 앱 셸 CSS** — 시맨틱 마크업이 기본 스타일을 받고, 버튼 위계는 Pico 클래스(`.secondary`·`.outline`)로 구분한다(핵심 동작만 primary, 파괴 동작은 outline). 톤(primary 색·radius·폰트)은 `web/theme.css`의 Pico CSS 변수 오버라이드, 앱 셸 레이아웃(사이드바·채팅 뷰·정보 패널 그리드)은 `web/layout.css`. 진입은 `index.html`의 링크 한 줄(`theme.css`)이고 Pico·layout은 그 안에서 `@import` — Bun 번들러가 link 복수 개의 순서를 보장하지 않아서다. Pico는 CDN 대신 `web/pico.min.css`로 셀프호스트 — 사내망·오프라인에서도 UI 유지.
 - **도구 체인** — Bun 1.3.11 고정(`engines.bun` 단일 소스 + 테스트 프리로드에서 버전 가드. bun은 engines를 강제하지 않는다). 린트·포맷은 Biome(2 spaces·120). 타입 게이트는 `tsc --noEmit`. JWT는 jose — 브로커 검증은 공개키 주입 구조, 키 출처는 같은 프로세스의 Better Auth JWKS(부팅 시 1회 로드 — 키 회전은 재기동 전제). 의존성은 정확 버전 고정([02 §2](02-tech-notes.md) 교훈).
 - **클라이언트 확장 = 클라이언트별 어댑터 플러그인** — 브로커 와이어(HTTP+SSE)와 `<channel>` 태그 규약은 공통이고, 주입 수단·도구 노출 방식만 클라이언트별 플러그인이 감당한다(CC는 `plugin-claudecode/`, OpenCode는 `plugin-opencode/`, 공용 층은 `client-core/`). OpenCode의 등록 단위는 **세션**(대화당 UUID 1개, CC와 동일한 의미) — 플러그인은 인스턴스당 1개지만 도구 컨텍스트의 sessionID로 세션별 브로커 연결을 관리한다([02 §6](02-tech-notes.md)).
 - **관리자 부트스트랩 = 스크립트** — 첫 admin은 화면이 아니라 `bun scripts/bootstrap-admin.ts <email>`로 만든다(멱등).
@@ -91,14 +91,18 @@ flowchart LR
 
 웹은 user 세션으로 동작한다. 관리자도 user이며 관리 화면만 추가로 가진다([01 §2](01-domain-model.md)).
 
-| 화면 | 대상 | 다루는 것 | 코드 |
+구조는 앱 셸(사이드바 + 본문 + 정보 패널, 데스크톱 전제)이다. 브로커 수신은 **세션당 SSE 연결 1개**로 받고 이벤트의 from·room으로 대화별 라우팅한다(`web/broker-stream.ts`) — 재연결은 수동(자동 재연결은 uuid 없는 URL로 붙어 새 UUID를 받는 함정), 재연결 직후 열린 room 전체에 watch를 다시 건다. 웹 UUID는 sessionStorage로 유지되어 새로고침에도 상대가 보는 정체성이 이어진다. 1:1 대화는 기록·저장 없음 — 이번 접속에서 주고받은 것만 화면에 존재한다.
+
+| 구역 | 대상 | 다루는 것 | 코드 |
 |------|------|----------|------|
 | 로그인 | 모두 | Google 로그인 — 초대된 계정만 통과 | `web/app.tsx` |
-| 내 에이전트 | 사용자 | 자기 토큰 생성, 접속 중인 자기 에이전트 목록 | `web/my-agent.tsx` |
-| 에이전트 목록 | 사용자 | 노출 교집합 기준 접속 중 에이전트 모니터, 1:1 대화 진입점 | `web/agents.tsx` |
-| 1:1 대화 | 사용자 | 특정 에이전트(UUID)와 주고받기 — 웹 세션은 노출 없는 등재, 기록 없음 | `web/chat.tsx` |
-| room | 사용자 | 생성(사회자 필수 선택)·참여자 배치(페르소나·사회자 지정)·시작·종료, 관전·참여, 종료된 room 기록 조회 | `web/rooms.tsx`·`web/room-panel.tsx` |
-| 사용자·그룹 관리 | 관리자 | 사용자 생성·삭제·초대 안내 복사, 그룹 생성·삭제, user_group 부여·회수 | `web/admin.tsx` |
+| 사이드바 | 사용자 | 에이전트·room 뷰 진입, 진행 중 room 목록, 이번 접속 1:1 목록(미읽음 점), 설정·로그아웃 | `web/sidebar.tsx` |
+| 에이전트 뷰 | 사용자 | 노출 교집합 기준 접속 중 에이전트 표, 1:1 시작 | `web/agents-view.tsx` |
+| room 뷰 | 사용자 | 생성(사회자 필수 선택)·전체 목록(열기·설정·종료·기록 조회) | `web/rooms-view.tsx` |
+| draft 설정 뷰 | 사용자 | 참여자 배치(페르소나·사회자 지정)·시작 | `web/room-setup.tsx` |
+| 채팅 뷰 | 사용자 | 1:1(기록 없음)과 room 관전·참여(기록됨) — 바닥 고정 로그·발신자 색·하단 입력바 | `web/dm-view.tsx`·`web/room-view.tsx` |
+| 정보 패널 | 사용자 | 1:1이면 상대 메타, room이면 참여자·상태·종료 버튼 (토글) | `web/info-panel.tsx` |
+| 설정 뷰 | 사용자·관리자 | 토큰 발급·내 에이전트 목록 / 관리자 탭(사용자·그룹, admin만) | `web/settings-view.tsx`·`web/my-agent.tsx`·`web/admin.tsx` |
 
 ## 6. 범위 밖
 

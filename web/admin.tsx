@@ -120,7 +120,7 @@ export function AdminScreen() {
       <h2>사용자·그룹 관리</h2>
       {error !== null && <p style={{ color: "red" }}>{error}</p>}
 
-      <button type="button" onClick={copyInviteLink}>
+      <button type="button" className="secondary" onClick={copyInviteLink}>
         초대 접속 주소 복사
       </button>
 
@@ -129,7 +129,7 @@ export function AdminScreen() {
         {groups.map((g) => (
           <li key={g.id}>
             {g.name}{" "}
-            <button type="button" onClick={() => deleteGroup(g.id)}>
+            <button type="button" className="outline contrast" onClick={() => deleteGroup(g.id)}>
               삭제
             </button>
           </li>
@@ -174,7 +174,7 @@ export function AdminScreen() {
                 })}
               </td>
               <td>
-                <button type="button" onClick={() => deleteUser(u.id)}>
+                <button type="button" className="outline contrast" onClick={() => deleteUser(u.id)}>
                   삭제
                 </button>
               </td>

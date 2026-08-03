@@ -1,0 +1,175 @@
+/* 데스크톱 전제 — 좁은 화면 대응은 하지 않는다. */
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+}
+
+.app-shell {
+  display: grid;
+  grid-template-columns: 264px 1fr;
+  height: 100vh;
+  min-width: 960px;
+}
+
+.app-shell[data-info="true"] {
+  grid-template-columns: 264px 1fr 304px;
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--pico-muted-border-color);
+  padding: var(--pico-spacing);
+  overflow-y: auto;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--pico-spacing) / 4);
+}
+
+.sidebar-section {
+  margin-top: calc(var(--pico-spacing) * 1.5);
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--pico-spacing) / 4);
+}
+
+.sidebar-section h2 {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--pico-muted-color);
+  margin: 0 0 calc(var(--pico-spacing) / 4) calc(var(--pico-spacing) / 2);
+}
+
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--pico-spacing) / 2);
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: calc(var(--pico-spacing) / 2);
+  border-radius: var(--pico-border-radius);
+  cursor: pointer;
+  color: inherit;
+  font-size: 0.9rem;
+}
+
+.sidebar-item:hover,
+.sidebar-item[aria-current="true"] {
+  background: var(--pico-primary-focus);
+}
+
+.sidebar-item .label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-item .dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--pico-primary);
+}
+
+.sidebar-item .badge {
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  color: var(--pico-muted-color);
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  padding-top: var(--pico-spacing);
+  border-top: 1px solid var(--pico-muted-border-color);
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--pico-spacing) / 2);
+}
+
+.sidebar-footer .email {
+  font-size: 0.8rem;
+  color: var(--pico-muted-color);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-main {
+  overflow-y: auto;
+  padding: calc(var(--pico-spacing) * 1.5);
+}
+
+.app-main--chat {
+  overflow: hidden;
+  padding: 0 calc(var(--pico-spacing) * 1.5);
+  display: flex;
+  flex-direction: column;
+}
+
+.info-panel {
+  border-left: 1px solid var(--pico-muted-border-color);
+  padding: var(--pico-spacing);
+  overflow-y: auto;
+}
+
+.chat-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pico-spacing);
+  padding: var(--pico-spacing) 0;
+  border-bottom: 1px solid var(--pico-muted-border-color);
+  flex-shrink: 0;
+}
+
+.chat-header .meta {
+  font-size: 0.85rem;
+  color: var(--pico-muted-color);
+}
+
+.chat-log {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  list-style: none;
+  padding: var(--pico-spacing) 0;
+  margin: 0;
+}
+
+.chat-input-bar {
+  flex-shrink: 0;
+  display: flex;
+  gap: var(--pico-spacing);
+  align-items: center;
+  padding: var(--pico-spacing) 0;
+  border-top: 1px solid var(--pico-muted-border-color);
+}
+
+.chat-input-bar input {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.app-main table button {
+  white-space: nowrap;
+}

@@ -6,7 +6,7 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**", "!plugin-claudecode/dist", "!web/pico.classless.min.css"]
+    "includes": ["**", "!plugin-claudecode/dist", "!web/pico.min.css"]
   },
   "formatter": {
     "enabled": true,
