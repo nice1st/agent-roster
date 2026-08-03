@@ -103,6 +103,18 @@ export function createRoomsApiRoutes(
     },
 
     "/api/rooms/:id/participants": {
+      GET: requireSession(webAuth, async (req, userId) => {
+        const roomId = roomIdFromPath(req, 2);
+        return requireOwnedRoom(userId, roomId, async () => {
+          const participants = rooms.listParticipants(roomId).map((p) => ({
+            agent_uuid: p.agent_uuid,
+            alias_snapshot: p.alias_snapshot,
+            persona: p.persona,
+            output_instruction: p.output_instruction,
+          }));
+          return Response.json({ participants });
+        });
+      }),
       POST: requireSession(webAuth, async (req, userId) => {
         const roomId = roomIdFromPath(req, 2);
         return requireOwnedRoom(userId, roomId, async (room) => {

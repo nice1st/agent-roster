@@ -135,6 +135,39 @@ test("room 참여자 배치가 동작한다", async () => {
   expect(addRes.status).toBe(201);
 });
 
+test("배치된 참여자를 소유자가 조회한다", async () => {
+  const owner = await createSessionUser(db, "owner-list@example.com");
+  const agentOwner = await createSessionUser(db, "agent-owner-list@example.com");
+  const g1 = groups.create("g-list");
+  groups.grant(owner.id, g1.id);
+  groups.grant(agentOwner.id, g1.id);
+  const agent = await registerAgent(agentOwner.id, "list-agent");
+
+  const createRes = await api("/api/rooms", owner.cookie, jsonInit("POST", { name: "r-list" }));
+  const { room } = (await createRes.json()) as { room: { id: string } };
+  await api(
+    `/api/rooms/${room.id}/participants`,
+    owner.cookie,
+    jsonInit("POST", { agent_uuid: agent.uuid, persona: "검토자", output_instruction: "요약 남기기" }),
+  );
+
+  const listRes = await api(`/api/rooms/${room.id}/participants`, owner.cookie);
+  expect(listRes.status).toBe(200);
+  const body = (await listRes.json()) as {
+    participants: { agent_uuid: string; alias_snapshot: string | null; persona: string | null }[];
+  };
+  expect(body.participants).toHaveLength(1);
+  expect(body.participants[0]).toMatchObject({
+    agent_uuid: agent.uuid,
+    alias_snapshot: "list-agent",
+    persona: "검토자",
+  });
+
+  const stranger = await createSessionUser(db, "stranger-list@example.com");
+  const strangerRes = await api(`/api/rooms/${room.id}/participants`, stranger.cookie);
+  expect(strangerRes.status).toBe(403);
+});
+
 test("배치는 보이는 에이전트만 허용된다", async () => {
   const owner = await createSessionUser(db, "owner3@example.com");
   const agentOwner = await createSessionUser(db, "agent-owner3@example.com");
