@@ -1,12 +1,13 @@
-import { useState } from "react";
+import { aliasOf } from "./agent-alias";
 import type { ConnectionState } from "./broker-stream";
-import { senderColor } from "./sender-color";
-import type { Conversation } from "./types";
-import { useStickToBottom } from "./use-stick-to-bottom";
+import { ChatComposer } from "./chat-composer";
+import { ChatLog, ConnectionBanner } from "./chat-log";
+import type { AgentListItem, Conversation } from "./types";
 
 export interface DmViewProps {
   peerUuid: string;
   conversation: Conversation;
+  agents: AgentListItem[];
   myUuid: string | null;
   connectionState: ConnectionState;
   onReconnect(): void;
@@ -18,6 +19,7 @@ export interface DmViewProps {
 export function DmView({
   peerUuid,
   conversation,
+  agents,
   myUuid,
   connectionState,
   onReconnect,
@@ -25,20 +27,13 @@ export function DmView({
   infoOpen,
   onToggleInfo,
 }: DmViewProps) {
-  const [draft, setDraft] = useState("");
-  const { logRef, onScroll } = useStickToBottom(conversation.messages);
-
-  function send() {
-    if (draft.trim() === "") return;
-    onSend(peerUuid, draft);
-    setDraft("");
-  }
+  const label = aliasOf(agents, peerUuid);
 
   return (
     <div className="chat-view">
       <div className="chat-header">
         <div>
-          <h1>{conversation.label}</h1>
+          <h1>{label}</h1>
           <p role="note" className="meta">
             1:1 대화는 기록되지 않습니다 — 새로고침하면 사라집니다.
           </p>
@@ -48,48 +43,13 @@ export function DmView({
         </button>
       </div>
 
-      {connectionState === "disconnected" && (
-        <p role="alert">
-          연결이 끊겼습니다.{" "}
-          <button type="button" onClick={onReconnect}>
-            재연결
-          </button>
-        </p>
-      )}
-      {connectionState === "connecting" && <p>연결 중…</p>}
+      <ConnectionBanner connectionState={connectionState} onReconnect={onReconnect} />
 
-      <ul role="log" ref={logRef} onScroll={onScroll} className="chat-log">
-        {conversation.messages.map((m, i) => {
-          const grouped = i > 0 && conversation.messages[i - 1]?.from === m.from;
-          return (
-            // biome-ignore lint/suspicious/noArrayIndexKey: 기록되지 않는 화면용 로그라 인덱스로 충분하다.
-            <li key={i} style={{ marginTop: grouped ? "0.125rem" : "0.75rem" }}>
-              {!grouped && (
-                <strong style={{ color: senderColor(m.from) }}>{m.from === myUuid ? "me" : conversation.label}</strong>
-              )}
-              <span style={{ whiteSpace: "pre-wrap", display: "block" }}>{m.message}</span>
-            </li>
-          );
-        })}
-      </ul>
+      <ChatLog messages={conversation.messages} myUuid={myUuid} labelOf={() => label} />
 
-      <div className="chat-input-bar">
-        <input
-          id="chat-draft"
-          aria-label="메시지 입력"
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={(e) => {
-            // 한글 IME 조합 중 Enter는 keydown이 두 번 발화한다 — 조합 확정분은 무시해야 중복 발신이 없다.
-            if (e.key === "Enter" && !e.nativeEvent.isComposing) send();
-          }}
-          disabled={myUuid === null}
-          placeholder="메시지 입력"
-        />
-        <button type="button" onClick={send} disabled={myUuid === null}>
-          전송
-        </button>
-      </div>
+      {conversation.error !== null && <p role="alert">{conversation.error}</p>}
+
+      <ChatComposer inputId="chat-draft" disabled={myUuid === null} onSend={(message) => onSend(peerUuid, message)} />
     </div>
   );
 }

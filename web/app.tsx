@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { AgentsView } from "./agents-view";
 import { useBrokerStream } from "./broker-stream";
 import { DmView } from "./dm-view";
+import { getJson, postJson } from "./http";
 import type { InfoPanelTarget } from "./info-panel";
 import { InfoPanel } from "./info-panel";
 import { RoomSetup } from "./room-setup";
@@ -20,9 +21,14 @@ import type {
   RoomParticipantItem,
   Selection,
 } from "./types";
-import { getJson, postJson } from "./types";
 
 const authClient = createAuthClient();
+
+function updateMap<K, V>(prev: Map<K, V>, key: K, updater: (existing: V | undefined) => V): Map<K, V> {
+  const next = new Map(prev);
+  next.set(key, updater(next.get(key)));
+  return next;
+}
 
 async function fetchRoomBackfill(
   roomId: string,
@@ -61,10 +67,6 @@ export function App() {
   const [infoPanelOpen, setInfoPanelOpen] = useState(false);
   const [streamError, setStreamError] = useState<string | null>(null);
 
-  function aliasOf(uuid: string): string {
-    return agents.find((a) => a.uuid === uuid)?.meta.alias ?? uuid;
-  }
-
   function isDmSelected(uuid: string): boolean {
     return typeof selection === "object" && "dm" in selection && selection.dm === uuid;
   }
@@ -74,17 +76,15 @@ export function App() {
   }
 
   function handleIncomingMessage(from: string, message: string, sentAt: string) {
-    setConversations((prev) => {
-      const next = new Map(prev);
-      const existing = next.get(from);
-      const unread = !isDmSelected(from);
-      if (existing !== undefined) {
-        next.set(from, { ...existing, messages: [...existing.messages, { from, message, sentAt }], unread });
-      } else {
-        next.set(from, { label: aliasOf(from), messages: [{ from, message, sentAt }], unread });
-      }
-      return next;
-    });
+    setConversations((prev) =>
+      updateMap(prev, from, (existing) => {
+        const unread = !isDmSelected(from);
+        const appended = { from, message, sentAt };
+        return existing === undefined
+          ? { messages: [appended], unread, error: null }
+          : { ...existing, messages: [...existing.messages, appended], unread };
+      }),
+    );
   }
 
   function handleRoomMessage(
@@ -96,23 +96,18 @@ export function App() {
   ) {
     setOpenRooms((prev) => {
       if (!prev.has(room)) return prev;
-      const next = new Map(prev);
-      const existing = next.get(room) as OpenRoom;
-      next.set(room, {
-        ...existing,
-        messages: [...existing.messages, { from, fromLabel, message, sentAt }],
+      return updateMap(prev, room, (existing) => ({
+        ...(existing as OpenRoom),
+        messages: [...(existing as OpenRoom).messages, { from, fromLabel, message, sentAt }],
         unread: !isRoomSelected(room),
-      });
-      return next;
+      }));
     });
   }
 
   function handleRoomEnd(room: string) {
     setOpenRooms((prev) => {
       if (!prev.has(room)) return prev;
-      const next = new Map(prev);
-      next.set(room, { ...(next.get(room) as OpenRoom), status: "ended" });
-      return next;
+      return updateMap(prev, room, (existing) => ({ ...(existing as OpenRoom), status: "ended" }));
     });
     reloadRooms();
   }
@@ -159,24 +154,21 @@ export function App() {
   }, []);
 
   async function loadRoom(id: string, name: string, status: "active" | "ended") {
-    setOpenRooms((prev) => {
-      const next = new Map(prev);
-      next.set(id, { name, status, messages: [], participants: [], unread: false });
-      return next;
-    });
+    setOpenRooms((prev) =>
+      updateMap(prev, id, () => ({ name, status, messages: [], participants: [], unread: false, error: null })),
+    );
     try {
       const backfill = await fetchRoomBackfill(id);
-      setOpenRooms((prev) => {
-        const next = new Map(prev);
-        next.set(id, {
+      setOpenRooms((prev) =>
+        updateMap(prev, id, () => ({
           name,
           status,
           messages: backfill.messages,
           participants: backfill.participants,
           unread: false,
-        });
-        return next;
-      });
+          error: null,
+        })),
+      );
       if (status === "active") await stream.watchRoom(id);
     } catch (e) {
       setStreamError(e instanceof Error ? e.message : String(e));
@@ -197,20 +189,17 @@ export function App() {
     setConversations((prev) => {
       const existing = prev.get(uuid);
       if (existing === undefined || !existing.unread) return prev;
-      const next = new Map(prev);
-      next.set(uuid, { ...existing, unread: false });
-      return next;
+      return updateMap(prev, uuid, (e) => ({ ...(e as Conversation), unread: false }));
     });
     setSelection({ dm: uuid });
   }
 
-  function openDm(uuid: string, label: string) {
-    setConversations((prev) => {
-      const next = new Map(prev);
-      const existing = next.get(uuid);
-      next.set(uuid, existing === undefined ? { label, messages: [], unread: false } : { ...existing, unread: false });
-      return next;
-    });
+  function openDm(uuid: string) {
+    setConversations((prev) =>
+      updateMap(prev, uuid, (existing) =>
+        existing === undefined ? { messages: [], unread: false, error: null } : { ...existing, unread: false },
+      ),
+    );
     setSelection({ dm: uuid });
   }
 
@@ -218,9 +207,7 @@ export function App() {
     setOpenRooms((prev) => {
       const existing = prev.get(id);
       if (existing === undefined || !existing.unread) return prev;
-      const next = new Map(prev);
-      next.set(id, { ...existing, unread: false });
-      return next;
+      return updateMap(prev, id, (e) => ({ ...(e as OpenRoom), unread: false }));
     });
     setSelection({ room: id });
   }
@@ -228,41 +215,47 @@ export function App() {
   async function sendDm(peerUuid: string, message: string) {
     const result = await stream.sendDirect(peerUuid, message);
     if (!result.ok) {
-      setStreamError(result.error ?? "전송 실패");
+      setConversations((prev) => {
+        if (!prev.has(peerUuid)) return prev;
+        return updateMap(prev, peerUuid, (existing) => ({
+          ...(existing as Conversation),
+          error: result.error ?? "전송 실패",
+        }));
+      });
       return;
     }
     const from = stream.myUuid ?? "";
-    setConversations((prev) => {
-      const next = new Map(prev);
-      const existing = next.get(peerUuid);
-      const appended = { from, message, sentAt: new Date().toISOString() };
-      next.set(
-        peerUuid,
+    const appended = { from, message, sentAt: new Date().toISOString() };
+    setConversations((prev) =>
+      updateMap(prev, peerUuid, (existing) =>
         existing === undefined
-          ? { label: aliasOf(peerUuid), messages: [appended], unread: false }
-          : { ...existing, messages: [...existing.messages, appended] },
-      );
-      return next;
-    });
+          ? { messages: [appended], unread: false, error: null }
+          : { ...existing, messages: [...existing.messages, appended], error: null },
+      ),
+    );
   }
 
   async function sendRoomMessage(roomId: string, message: string) {
     const result = await stream.sendRoom(roomId, message);
     if (!result.ok) {
-      setStreamError(result.error ?? "전송 실패");
+      setOpenRooms((prev) => {
+        if (!prev.has(roomId)) return prev;
+        return updateMap(prev, roomId, (existing) => ({
+          ...(existing as OpenRoom),
+          error: result.error ?? "전송 실패",
+        }));
+      });
       return;
     }
     // 브로커 팬아웃이 발신자를 제외하므로 자기 발언은 스트림으로 돌아오지 않는다 — 여기서 직접 붙인다.
     const from = stream.myUuid ?? "";
     setOpenRooms((prev) => {
       if (!prev.has(roomId)) return prev;
-      const next = new Map(prev);
-      const existing = next.get(roomId) as OpenRoom;
-      next.set(roomId, {
-        ...existing,
-        messages: [...existing.messages, { from, message, sentAt: new Date().toISOString() }],
-      });
-      return next;
+      return updateMap(prev, roomId, (existing) => ({
+        ...(existing as OpenRoom),
+        messages: [...(existing as OpenRoom).messages, { from, message, sentAt: new Date().toISOString() }],
+        error: null,
+      }));
     });
   }
 
@@ -282,9 +275,7 @@ export function App() {
       await reloadRooms();
       setOpenRooms((prev) => {
         if (!prev.has(id)) return prev;
-        const next = new Map(prev);
-        next.set(id, { ...(next.get(id) as OpenRoom), status: "ended" });
-        return next;
+        return updateMap(prev, id, (existing) => ({ ...(existing as OpenRoom), status: "ended" }));
       });
     } else {
       const body = (await res.json()) as { error?: string };
@@ -309,7 +300,7 @@ export function App() {
       const conv = conversations.get(selection.dm);
       if (conv === undefined) return null;
       const agent = agents.find((a) => a.uuid === selection.dm);
-      return { kind: "dm", peerUuid: selection.dm, label: conv.label, meta: agent?.meta ?? null };
+      return { kind: "dm", peerUuid: selection.dm, meta: agent?.meta ?? null };
     }
     return null;
   }
@@ -349,6 +340,7 @@ export function App() {
           key={selection.dm}
           peerUuid={selection.dm}
           conversation={conv}
+          agents={agents}
           myUuid={stream.myUuid}
           connectionState={stream.state}
           onReconnect={stream.reconnect}
@@ -420,6 +412,7 @@ export function App() {
         rooms={rooms}
         openRooms={openRooms}
         conversations={conversations}
+        agents={agents}
         onSelectAgents={() => setSelection("agents")}
         onSelectRooms={() => setSelection("rooms")}
         onSelectSettings={() => setSelection("settings")}
@@ -432,7 +425,7 @@ export function App() {
         {streamError !== null && <p role="alert">{streamError}</p>}
         {renderBody()}
       </main>
-      {infoPanelTarget !== null && <InfoPanel target={infoPanelTarget} onEndRoom={endRoomAction} />}
+      {infoPanelTarget !== null && <InfoPanel target={infoPanelTarget} agents={agents} onEndRoom={endRoomAction} />}
     </div>
   );
 }

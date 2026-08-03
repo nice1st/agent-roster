@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
+import { getJson, postJson } from "./http";
 import type { AgentListItem, RoomListItem, RoomParticipantItem } from "./types";
-import { postJson } from "./types";
 
 const DEFAULT_MODERATOR_TEXT = `'사회자' 역할: 주제와 발언 순서를 통제한다.
 - 진행 규칙과 컨텍스트를 먼저 정리하고 첫 주제를 연다.
@@ -26,9 +26,20 @@ export function RoomSetup({ room, agents, onReloadAgents, onStarted, onBack }: R
   const [moderatorUuid, setModeratorUuid] = useState("");
   const [moderatorText, setModeratorText] = useState(DEFAULT_MODERATOR_TEXT);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: room이 바뀌면 새 화면이므로 배치 목록을 초기화한다.
   useEffect(() => {
     setParticipants([]);
+    setError(null);
+    let cancelled = false;
+    getJson<{ participants: RoomParticipantItem[] }>(`/api/rooms/${room.id}/participants`)
+      .then((res) => {
+        if (!cancelled) setParticipants(res.participants);
+      })
+      .catch((e) => {
+        if (!cancelled) setError(e instanceof Error ? e.message : String(e));
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [room.id]);
 
   async function addParticipant() {

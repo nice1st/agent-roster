@@ -1,10 +1,12 @@
-import type { Conversation, OpenRoom, RoomListItem, Selection } from "./types";
+import { aliasOf } from "./agent-alias";
+import type { AgentListItem, Conversation, OpenRoom, RoomListItem, Selection } from "./types";
 
 export interface SidebarProps {
   selection: Selection;
   rooms: RoomListItem[];
   openRooms: Map<string, OpenRoom>;
   conversations: Map<string, Conversation>;
+  agents: AgentListItem[];
   onSelectAgents(): void;
   onSelectRooms(): void;
   onSelectSettings(): void;
@@ -31,6 +33,7 @@ export function Sidebar({
   rooms,
   openRooms,
   conversations,
+  agents,
   onSelectAgents,
   onSelectRooms,
   onSelectSettings,
@@ -91,7 +94,7 @@ export function Sidebar({
             aria-current={activeDmUuid === uuid}
             onClick={() => onSelectDm(uuid)}
           >
-            <span className="label">{conv.label}</span>
+            <span className="label">{aliasOf(agents, uuid)}</span>
             {conv.unread && <span className="dot" role="status" aria-label="읽지 않음" />}
           </button>
         ))}

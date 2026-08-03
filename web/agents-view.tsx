@@ -5,7 +5,7 @@ export interface AgentsViewProps {
   loading: boolean;
   error: string | null;
   onReload(): void;
-  onChat(uuid: string, label: string): void;
+  onChat(uuid: string): void;
 }
 
 export function AgentsView({ agents, loading, error, onReload, onChat }: AgentsViewProps) {
@@ -38,7 +38,7 @@ export function AgentsView({ agents, loading, error, onReload, onChat }: AgentsV
               <td>{a.owner.email}</td>
               <td>{a.uuid}</td>
               <td>
-                <button type="button" onClick={() => onChat(a.uuid, a.meta.alias ?? a.owner.email)}>
+                <button type="button" onClick={() => onChat(a.uuid)}>
                   대화
                 </button>
               </td>

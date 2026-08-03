@@ -1,19 +1,21 @@
-import type { AgentMeta, RoomParticipantItem } from "./types";
+import { aliasOf } from "./agent-alias";
+import type { AgentListItem, AgentMeta, RoomParticipantItem } from "./types";
 
 export type InfoPanelTarget =
   | { kind: "room"; roomId: string; name: string; status: "active" | "ended"; participants: RoomParticipantItem[] }
-  | { kind: "dm"; peerUuid: string; label: string; meta: AgentMeta | null };
+  | { kind: "dm"; peerUuid: string; meta: AgentMeta | null };
 
 export interface InfoPanelProps {
   target: InfoPanelTarget;
+  agents: AgentListItem[];
   onEndRoom(roomId: string): void;
 }
 
-export function InfoPanel({ target, onEndRoom }: InfoPanelProps) {
+export function InfoPanel({ target, agents, onEndRoom }: InfoPanelProps) {
   if (target.kind === "dm") {
     return (
       <aside className="info-panel">
-        <h2>{target.label}</h2>
+        <h2>{aliasOf(agents, target.peerUuid)}</h2>
         <p role="note">1:1 대화는 기록되지 않습니다.</p>
         {target.meta === null ? (
           <p>추가 정보 없음</p>
