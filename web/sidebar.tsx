@@ -1,4 +1,5 @@
 import { aliasOf } from "./agent-alias";
+import { roomStatusLabel } from "./format";
 import type { AgentListItem, Conversation, OpenRoom, RoomListItem, Selection } from "./types";
 
 export interface SidebarProps {
@@ -48,6 +49,7 @@ export function Sidebar({
 
   return (
     <aside className="sidebar">
+      <div className="sidebar-brand">agent-roster</div>
       <nav className="sidebar-nav">
         <button
           type="button"
@@ -63,12 +65,12 @@ export function Sidebar({
           aria-current={isSelected(selection, "rooms")}
           onClick={onSelectRooms}
         >
-          <span className="label">room</span>
+          <span className="label">토론방</span>
         </button>
       </nav>
 
       <section className="sidebar-section">
-        <h2>room — 진행 중</h2>
+        <h2>진행 중인 토론방</h2>
         {ongoingRooms.map((r) => (
           <button
             key={r.id}
@@ -79,7 +81,7 @@ export function Sidebar({
           >
             <span className="label">{r.name}</span>
             {openRooms.get(r.id)?.unread === true && <span className="dot" role="status" aria-label="읽지 않음" />}
-            <span className="badge">{r.status === "active" ? "진행 중" : "준비 중"}</span>
+            <span className={r.status === "active" ? "badge live" : "badge"}>{roomStatusLabel(r.status)}</span>
           </button>
         ))}
       </section>
@@ -102,17 +104,14 @@ export function Sidebar({
 
       <div className="sidebar-footer">
         <span className="email">{userEmail}</span>
-        <button
-          type="button"
-          className="secondary"
-          aria-current={isSelected(selection, "settings")}
-          onClick={onSelectSettings}
-        >
-          설정
-        </button>
-        <button type="button" className="outline secondary" onClick={onLogout}>
-          로그아웃
-        </button>
+        <div className="actions">
+          <button type="button" aria-current={isSelected(selection, "settings")} onClick={onSelectSettings}>
+            설정
+          </button>
+          <button type="button" onClick={onLogout}>
+            로그아웃
+          </button>
+        </div>
       </div>
     </aside>
   );

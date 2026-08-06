@@ -32,9 +32,11 @@ export function RoomView({
     <div className="chat-view">
       <div className="chat-header">
         <div>
-          <h1>room: {room.name}</h1>
+          <h1>{room.name}</h1>
           <p role="note" className="meta">
-            {room.status === "ended" ? "이 room은 종료됐습니다. 기록만 조회할 수 있습니다." : "room 대화는 기록됩니다."}
+            {room.status === "ended"
+              ? "토론방 · 종료됨 — 기록만 조회할 수 있습니다"
+              : "토론방 · 진행 중 — 대화는 기록됩니다"}
           </p>
         </div>
         <button type="button" className="outline secondary" onClick={onToggleInfo}>
@@ -42,7 +44,7 @@ export function RoomView({
         </button>
       </div>
 
-      {justEnded && <p role="alert">이 room이 방금 종료됐습니다. 더 이상 발언할 수 없습니다.</p>}
+      {justEnded && <p role="alert">이 토론방이 방금 종료됐습니다. 더 이상 발언할 수 없습니다.</p>}
       {room.status === "active" && <ConnectionBanner connectionState={connectionState} onReconnect={onReconnect} />}
 
       <ChatLog messages={room.messages} myUuid={myUuid} labelOf={(m) => m.fromLabel ?? m.from} />

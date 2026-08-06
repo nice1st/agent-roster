@@ -60,6 +60,7 @@ export function App() {
 
   const [rooms, setRooms] = useState<RoomListItem[]>([]);
   const [roomsLoading, setRoomsLoading] = useState(false);
+  const [roomsError, setRoomsError] = useState<string | null>(null);
 
   const [conversations, setConversations] = useState<Map<string, Conversation>>(new Map());
   const [openRooms, setOpenRooms] = useState<Map<string, OpenRoom>>(new Map());
@@ -142,16 +143,21 @@ export function App() {
     try {
       const res = await getJson<{ rooms: RoomListItem[] }>("/api/rooms");
       setRooms(res.rooms);
+      setRoomsError(null);
+    } catch (e) {
+      setRoomsError(e instanceof Error ? e.message : String(e));
     } finally {
       setRoomsLoading(false);
     }
   }
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: 마운트 시 1회만 초기 로드한다.
+  const loggedIn = session !== null;
+  // biome-ignore lint/correctness/useExhaustiveDependencies: 로그인 확정 시 1회만 초기 로드한다.
   useEffect(() => {
+    if (!loggedIn) return;
     reloadAgents();
     reloadRooms();
-  }, []);
+  }, [loggedIn]);
 
   async function loadRoom(id: string, name: string, status: "active" | "ended") {
     setOpenRooms((prev) =>
@@ -185,6 +191,39 @@ export function App() {
     loadRoom(id, meta.name, meta.status);
   }, [selection, rooms]);
 
+  function pushSelection(sel: Selection) {
+    history.pushState({ sel }, "");
+  }
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: 마운트 시 현재 항목에 selection을 심는다.
+  useEffect(() => {
+    history.replaceState({ sel: selection }, "");
+  }, []);
+
+  useEffect(() => {
+    function onPopState(e: PopStateEvent) {
+      const sel = (e.state as { sel?: unknown } | null)?.sel;
+      if (sel === "agents" || sel === "rooms" || sel === "settings") {
+        setSelection(sel);
+        return;
+      }
+      if (typeof sel === "object" && sel !== null && "dm" in sel && typeof sel.dm === "string") {
+        // 새로고침 등으로 세션 대화가 사라진 항목은 복원 불가 — 목록으로 폴백한다.
+        if (conversations.has(sel.dm)) selectDm(sel.dm);
+        else setSelection("agents");
+        return;
+      }
+      if (typeof sel === "object" && sel !== null && "room" in sel && typeof sel.room === "string") {
+        if (openRooms.has(sel.room) || rooms.some((r) => r.id === sel.room)) selectRoom(sel.room);
+        else setSelection("rooms");
+        return;
+      }
+      setSelection("agents");
+    }
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  });
+
   function selectDm(uuid: string) {
     setConversations((prev) => {
       const existing = prev.get(uuid);
@@ -195,12 +234,23 @@ export function App() {
   }
 
   function openDm(uuid: string) {
+    pushSelection({ dm: uuid });
     setConversations((prev) =>
       updateMap(prev, uuid, (existing) =>
         existing === undefined ? { messages: [], unread: false, error: null } : { ...existing, unread: false },
       ),
     );
     setSelection({ dm: uuid });
+  }
+
+  function navigate(sel: Selection) {
+    pushSelection(sel);
+    if (typeof sel === "object") {
+      if ("dm" in sel) selectDm(sel.dm);
+      else selectRoom(sel.room);
+      return;
+    }
+    setSelection(sel);
   }
 
   function selectRoom(id: string) {
@@ -322,9 +372,10 @@ export function App() {
         <RoomsView
           rooms={rooms}
           loading={roomsLoading}
+          error={roomsError}
           onReload={reloadRooms}
           onCreateRoom={createRoom}
-          onOpenRoom={selectRoom}
+          onOpenRoom={(id) => navigate({ room: id })}
           onEndRoom={endRoomAction}
         />
       );
@@ -361,9 +412,9 @@ export function App() {
             onReloadAgents={reloadAgents}
             onStarted={() => {
               reloadRooms();
-              setSelection("rooms");
+              navigate("rooms");
             }}
-            onBack={() => setSelection("rooms")}
+            onBack={() => navigate("rooms")}
           />
         );
       }
@@ -392,18 +443,19 @@ export function App() {
 
   if (session === null) {
     return (
-      <main className="container">
-        <h1>agent-roster</h1>
-        <p>초대된 계정만 로그인할 수 있다.</p>
-        <button type="button" onClick={() => authClient.signIn.social({ provider: "google" })}>
-          Google로 로그인
-        </button>
+      <main className="login">
+        <div>
+          <h1>agent-roster</h1>
+          <p>초대된 계정만 로그인할 수 있습니다.</p>
+          <button type="button" onClick={() => authClient.signIn.social({ provider: "google" })}>
+            Google로 로그인
+          </button>
+        </div>
       </main>
     );
   }
 
   const infoPanelTarget = computeInfoPanelTarget();
-  const isChatSelection = typeof selection === "object";
 
   return (
     <div className="app-shell" data-info={infoPanelTarget !== null ? "true" : undefined}>
@@ -413,15 +465,15 @@ export function App() {
         openRooms={openRooms}
         conversations={conversations}
         agents={agents}
-        onSelectAgents={() => setSelection("agents")}
-        onSelectRooms={() => setSelection("rooms")}
-        onSelectSettings={() => setSelection("settings")}
-        onSelectRoom={selectRoom}
-        onSelectDm={selectDm}
+        onSelectAgents={() => navigate("agents")}
+        onSelectRooms={() => navigate("rooms")}
+        onSelectSettings={() => navigate("settings")}
+        onSelectRoom={(id) => navigate({ room: id })}
+        onSelectDm={(uuid) => navigate({ dm: uuid })}
         userEmail={session.user.email}
         onLogout={() => authClient.signOut()}
       />
-      <main className={isChatSelection ? "app-main app-main--chat" : "app-main"}>
+      <main className="app-main">
         {streamError !== null && <p role="alert">{streamError}</p>}
         {renderBody()}
       </main>

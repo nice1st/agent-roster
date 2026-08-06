@@ -21,11 +21,11 @@ export function InfoPanel({ target, agents, onEndRoom }: InfoPanelProps) {
           <p>추가 정보 없음</p>
         ) : (
           <dl>
-            <dt>machine</dt>
+            <dt>머신</dt>
             <dd>{target.meta.machine ?? ""}</dd>
-            <dt>cwd</dt>
+            <dt>작업 폴더</dt>
             <dd>{target.meta.cwd ?? ""}</dd>
-            <dt>status</dt>
+            <dt>상태</dt>
             <dd>{target.meta.status ?? ""}</dd>
           </dl>
         )}

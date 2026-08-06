@@ -35,7 +35,7 @@ export function DmView({
         <div>
           <h1>{label}</h1>
           <p role="note" className="meta">
-            1:1 대화는 기록되지 않습니다 — 새로고침하면 사라집니다.
+            1:1 — 기록되지 않는 대화, 새로고침하면 사라집니다
           </p>
         </div>
         <button type="button" className="outline secondary" onClick={onToggleInfo}>

@@ -22,11 +22,11 @@ export function ChatLog<M extends ChatLogMessage>({ messages, myUuid, labelOf }:
       {messages.map((m, i) => {
         const grouped = i > 0 && messages[i - 1]?.from === m.from;
         return (
-          <li key={m.id ?? `stream-${i}`} style={{ marginTop: grouped ? "0.125rem" : "0.75rem" }}>
+          <li key={m.id ?? `stream-${i}`} className={grouped ? "grouped" : undefined}>
             {!grouped && (
               <strong style={{ color: senderColor(m.from) }}>{m.from === myUuid ? "me" : labelOf(m)}</strong>
             )}
-            <span style={{ whiteSpace: "pre-wrap", display: "block" }}>{m.message}</span>
+            <span className="msg">{m.message}</span>
           </li>
         );
       })}

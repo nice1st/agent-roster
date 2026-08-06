@@ -23,50 +23,77 @@ body {
 .sidebar {
   display: flex;
   flex-direction: column;
+  background: var(--app-surface);
   border-right: 1px solid var(--pico-muted-border-color);
-  padding: var(--pico-spacing);
+  padding: 0.9rem 0.7rem;
   overflow-y: auto;
+}
+
+.sidebar-brand {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  padding: 0.1rem 0.55rem 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sidebar-brand::before {
+  content: "";
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 0.28rem;
+  background: linear-gradient(135deg, #818cf8, var(--pico-primary-background));
+  flex-shrink: 0;
 }
 
 .sidebar-nav {
   display: flex;
   flex-direction: column;
-  gap: calc(var(--pico-spacing) / 4);
+  gap: 2px;
 }
 
 .sidebar-section {
-  margin-top: calc(var(--pico-spacing) * 1.5);
+  margin-top: 0.9rem;
   display: flex;
   flex-direction: column;
-  gap: calc(var(--pico-spacing) / 4);
+  gap: 2px;
 }
 
 .sidebar-section h2 {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.08em;
   color: var(--pico-muted-color);
-  margin: 0 0 calc(var(--pico-spacing) / 4) calc(var(--pico-spacing) / 2);
+  margin: 0;
+  padding: 0.35rem 0.55rem 0.25rem;
 }
 
-.sidebar-item {
+button.sidebar-item {
   display: flex;
   align-items: center;
-  gap: calc(var(--pico-spacing) / 2);
+  gap: 0.55rem;
   width: 100%;
   text-align: left;
   background: none;
   border: none;
-  padding: calc(var(--pico-spacing) / 2);
+  padding: 0.5rem 0.55rem;
   border-radius: var(--pico-border-radius);
   cursor: pointer;
   color: inherit;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
+  font-weight: 500;
 }
 
-.sidebar-item:hover,
+.sidebar-item:hover {
+  background: var(--app-surface-2);
+}
+
 .sidebar-item[aria-current="true"] {
-  background: var(--pico-primary-focus);
+  background: var(--app-selected-bg);
+  font-weight: 600;
 }
 
 .sidebar-item .label {
@@ -77,8 +104,8 @@ body {
 }
 
 .sidebar-item .dot {
-  width: 0.5rem;
-  height: 0.5rem;
+  width: 7px;
+  height: 7px;
   flex-shrink: 0;
   border-radius: 50%;
   background: var(--pico-primary);
@@ -86,43 +113,226 @@ body {
 
 .sidebar-item .badge {
   flex-shrink: 0;
-  font-size: 0.7rem;
+  font-size: 0.64rem;
   color: var(--pico-muted-color);
+  border: 1px solid var(--pico-muted-border-color);
+  border-radius: 999px;
+  padding: 0.1rem 0.45rem;
+  line-height: 1.4;
+}
+
+.sidebar-item .badge.live {
+  color: light-dark(#2c7a4b, #8fd3a8);
+  border-color: color-mix(in srgb, light-dark(#2c7a4b, #8fd3a8) 45%, transparent);
 }
 
 .sidebar-footer {
   margin-top: auto;
-  padding-top: var(--pico-spacing);
+  padding: 0.7rem 0.55rem 0.1rem;
   border-top: 1px solid var(--pico-muted-border-color);
   display: flex;
-  flex-direction: column;
-  gap: calc(var(--pico-spacing) / 2);
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
 }
 
 .sidebar-footer .email {
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   color: var(--pico-muted-color);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.app-main {
-  overflow-y: auto;
-  padding: calc(var(--pico-spacing) * 1.5);
+.sidebar-footer .actions {
+  display: flex;
+  gap: 0.125rem;
+  flex-shrink: 0;
 }
 
-.app-main--chat {
+.app-main {
   overflow: hidden;
-  padding: 0 calc(var(--pico-spacing) * 1.5);
   display: flex;
   flex-direction: column;
+  min-width: 0;
+}
+
+.app-main > [role="alert"] {
+  margin: 0.8rem 1.2rem 0;
+}
+
+.view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.view-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 1.4rem;
+}
+
+.view-body > * {
+  max-width: 52rem;
+}
+
+.view-body--narrow > * {
+  max-width: 44rem;
+}
+
+.view-body h2 {
+  margin: 1.4rem 0 0.6rem;
+}
+
+.view-body > :where(:first-child) h2:where(:first-child) {
+  margin-top: 0;
+}
+
+.view-body section + section {
+  margin-top: 2rem;
+}
+
+.list-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  margin-bottom: 0.9rem;
+}
+
+.list-head h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.list-head .actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.form-card {
+  border: 1px solid var(--pico-muted-border-color);
+  border-radius: 0.75rem;
+  background: var(--app-surface);
+  padding: 1.1rem 1.25rem 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.form-card h2 {
+  margin-top: 0;
+}
+
+.view-body > nav {
+  margin-bottom: 1.4rem;
+}
+
+.view-body ul {
+  list-style: none;
+  padding-left: 0;
+  margin: 0 0 0.9rem;
+}
+
+/* Pico가 ul li에 square 마커를 직접 지정한다 — li에서도 꺼야 사라진다. */
+.view-body li {
+  list-style: none;
+  padding: 0.3rem 0;
+}
+
+.login {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login > div {
+  width: 20rem;
+  text-align: center;
+  padding: 2rem;
+  border: 1px solid var(--pico-muted-border-color);
+  border-radius: 0.75rem;
+  background: var(--app-surface);
+}
+
+.login h1 {
+  font-size: 1.125rem;
+  margin-bottom: 0.25rem;
+}
+
+.login p {
+  color: var(--pico-muted-color);
+  font-size: 0.85rem;
+  margin-bottom: 1.25rem;
 }
 
 .info-panel {
   border-left: 1px solid var(--pico-muted-border-color);
-  padding: var(--pico-spacing);
+  background: var(--app-surface);
+  padding: 1rem;
   overflow-y: auto;
+  font-size: 0.86rem;
+}
+
+.info-panel h2,
+.info-panel h3 {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--pico-muted-color);
+  margin: 1rem 0 0.45rem;
+}
+
+.info-panel h2:first-child {
+  margin-top: 0.2rem;
+}
+
+.info-panel p,
+.info-panel dl,
+.info-panel ul {
+  background: var(--pico-background-color);
+  border: 1px solid var(--pico-muted-border-color);
+  border-radius: var(--pico-border-radius);
+  padding: 0.7rem 0.8rem;
+  margin: 0 0 0.9rem;
+}
+
+.info-panel p {
+  color: var(--pico-muted-color);
+  line-height: 1.45;
+}
+
+.info-panel dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  row-gap: 0.3rem;
+}
+
+.info-panel dt {
+  color: var(--pico-muted-color);
+  font-weight: 400;
+}
+
+.info-panel dd {
+  margin: 0;
+  text-align: right;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.info-panel ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.info-panel li {
+  line-height: 1.45;
 }
 
 .chat-view {
@@ -136,15 +346,33 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--pico-spacing);
-  padding: var(--pico-spacing) 0;
+  gap: 0.8rem;
+  padding: 0.8rem 1.2rem;
   border-bottom: 1px solid var(--pico-muted-border-color);
   flex-shrink: 0;
 }
 
+.chat-header > div {
+  display: flex;
+  align-items: baseline;
+  gap: 0.8rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.chat-header h1 {
+  font-size: 1rem;
+  margin-bottom: 0;
+  white-space: nowrap;
+}
+
 .chat-header .meta {
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   color: var(--pico-muted-color);
+  margin-bottom: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .chat-log {
@@ -152,16 +380,45 @@ body {
   min-height: 0;
   overflow-y: auto;
   list-style: none;
-  padding: var(--pico-spacing) 0;
+  padding: 1.1rem 1.4rem;
   margin: 0;
+}
+
+.chat-log li {
+  list-style: none;
+  max-width: 46rem;
+  margin-top: 0.8rem;
+}
+
+.chat-log li:first-child {
+  margin-top: 0;
+}
+
+.chat-log li.grouped {
+  margin-top: 0.15rem;
+}
+
+.chat-log li strong {
+  display: block;
+  font-size: 0.84rem;
+  font-weight: 650;
+  margin-bottom: 0.1rem;
+}
+
+.chat-log .msg {
+  display: block;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  font-size: 0.92rem;
+  line-height: 1.55;
 }
 
 .chat-input-bar {
   flex-shrink: 0;
   display: flex;
-  gap: var(--pico-spacing);
+  gap: 0.6rem;
   align-items: center;
-  padding: var(--pico-spacing) 0;
+  padding: 0.9rem 1.4rem 1.1rem;
   border-top: 1px solid var(--pico-muted-border-color);
 }
 
@@ -170,6 +427,30 @@ body {
   margin-bottom: 0;
 }
 
+.chat-header button {
+  font-size: 0.78rem;
+  padding: 0.25rem 0.6rem;
+  flex-shrink: 0;
+}
+
 .app-main table button {
   white-space: nowrap;
+}
+
+.sidebar-footer .actions button {
+  font-size: 0.82rem;
+  padding: 0.2rem 0.4rem;
+  background: transparent;
+  color: var(--pico-muted-color);
+  border: none;
+}
+
+.sidebar-footer .actions button:hover {
+  background: var(--app-surface-2);
+  color: var(--pico-color);
+}
+
+.sidebar-footer .actions button[aria-current="true"] {
+  background: var(--app-selected-bg);
+  color: var(--pico-color);
 }

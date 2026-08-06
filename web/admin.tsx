@@ -117,14 +117,10 @@ export function AdminScreen() {
 
   return (
     <section>
-      <h2>사용자·그룹 관리</h2>
-      {error !== null && <p style={{ color: "red" }}>{error}</p>}
+      {error !== null && <p role="alert">{error}</p>}
 
-      <button type="button" className="secondary" onClick={copyInviteLink}>
-        초대 접속 주소 복사
-      </button>
-
-      <h3>그룹</h3>
+      <h2>그룹</h2>
+      {groups.length === 0 && <p>그룹이 없습니다.</p>}
       <ul>
         {groups.map((g) => (
           <li key={g.id}>
@@ -140,19 +136,24 @@ export function AdminScreen() {
         id="admin-new-group-name"
         value={newGroupName}
         onChange={(e) => setNewGroupName(e.target.value)}
-        placeholder="새 그룹 이름"
+        placeholder="예: dev-team"
       />
       <button type="button" onClick={createGroup}>
         그룹 생성
       </button>
 
-      <h3>사용자</h3>
+      <div className="list-head">
+        <h2>사용자</h2>
+        <button type="button" className="secondary" onClick={copyInviteLink}>
+          초대 접속 주소 복사
+        </button>
+      </div>
       <table>
         <caption>사용자 목록</caption>
         <thead>
           <tr>
-            <th scope="col">email</th>
-            <th scope="col">role</th>
+            <th scope="col">이메일</th>
+            <th scope="col">역할</th>
             <th scope="col">그룹</th>
             <th scope="col"> </th>
           </tr>
@@ -161,7 +162,7 @@ export function AdminScreen() {
           {users.map((u) => (
             <tr key={u.id}>
               <td>{u.email}</td>
-              <td>{u.role}</td>
+              <td>{u.role === "admin" ? "관리자" : "사용자"}</td>
               <td>
                 {groups.map((g) => {
                   const hasIt = u.groupIds.includes(g.id);
@@ -182,12 +183,12 @@ export function AdminScreen() {
           ))}
         </tbody>
       </table>
-      <label htmlFor="admin-new-user-email">새 사용자 email</label>
+      <label htmlFor="admin-new-user-email">새 사용자 이메일</label>
       <input
         id="admin-new-user-email"
         value={newUserEmail}
         onChange={(e) => setNewUserEmail(e.target.value)}
-        placeholder="새 사용자 email"
+        placeholder="user@example.com"
       />
       <button type="button" onClick={createUser}>
         사용자 생성

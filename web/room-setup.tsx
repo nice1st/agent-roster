@@ -98,7 +98,7 @@ export function RoomSetup({ room, agents, onReloadAgents, onStarted, onBack }: R
 
   async function startRoom() {
     if (room.moderator_required && moderatorUuid === "") {
-      setError("이 room은 사회자 필수입니다 — 사회자를 지정한 뒤 시작하세요");
+      setError("이 토론방은 사회자 필수입니다 — 사회자를 지정한 뒤 시작하세요");
       return;
     }
     if (moderatorUuid !== "" && !(await applyModeratorPersona())) return;
@@ -111,89 +111,100 @@ export function RoomSetup({ room, agents, onReloadAgents, onStarted, onBack }: R
   }
 
   return (
-    <section>
-      <h1>{room.name} — 참여자 배치</h1>
-      {error !== null && <p role="alert">{error}</p>}
+    <section className="view">
+      <header className="chat-header">
+        <div>
+          <h1>{room.name}</h1>
+          <p className="meta">토론방 · 준비 중 — 시작 전에 참여자를 배치합니다</p>
+        </div>
+      </header>
+      <div className="view-body view-body--narrow">
+        {error !== null && <p role="alert">{error}</p>}
 
-      <ul>
-        {participants.map((p) => (
-          <li key={p.agent_uuid}>
-            {p.alias_snapshot ?? p.agent_uuid} {p.persona !== null && `(${p.persona})`}{" "}
-            <button type="button" className="outline secondary" onClick={() => removeParticipant(p.agent_uuid)}>
-              제거
-            </button>
-          </li>
-        ))}
-      </ul>
+        <h2>참여자 {participants.length}</h2>
+        {participants.length === 0 && <p>아직 참여자가 없습니다 — 아래에서 에이전트를 추가하세요.</p>}
+        <ul>
+          {participants.map((p) => (
+            <li key={p.agent_uuid}>
+              {p.alias_snapshot ?? p.agent_uuid} {p.persona !== null && `(${p.persona})`}{" "}
+              <button type="button" className="outline secondary" onClick={() => removeParticipant(p.agent_uuid)}>
+                제거
+              </button>
+            </li>
+          ))}
+        </ul>
 
-      <label htmlFor="room-setup-agent-select">에이전트 선택</label>
-      <p>
-        <button type="button" className="secondary" onClick={onReloadAgents}>
-          에이전트 새로고침
-        </button>
-      </p>
-      <select id="room-setup-agent-select" value={selectedUuid} onChange={(e) => setSelectedUuid(e.target.value)}>
-        <option value="">에이전트 선택</option>
-        {agents.map((a) => (
-          <option key={a.uuid} value={a.uuid}>
-            {a.meta.alias ?? a.owner.email} ({a.uuid})
-          </option>
-        ))}
-      </select>
-      <label htmlFor="room-setup-persona">페르소나(선택)</label>
-      <textarea
-        id="room-setup-persona"
-        style={{ width: "100%", maxWidth: "48rem" }}
-        value={persona}
-        onChange={(e) => setPersona(e.target.value)}
-        rows={3}
-        placeholder="페르소나(선택) — 이 에이전트가 room에서 맡을 역할·관점"
-      />
-      <label htmlFor="room-setup-output-instruction">산출물 지시(선택)</label>
-      <input
-        id="room-setup-output-instruction"
-        value={outputInstruction}
-        onChange={(e) => setOutputInstruction(e.target.value)}
-        placeholder="산출물 지시(선택)"
-      />
-      <button type="button" onClick={addParticipant}>
-        추가
-      </button>
+        <div className="list-head">
+          <h2>참여자 추가</h2>
+          <button type="button" className="secondary" onClick={onReloadAgents}>
+            에이전트 새로고침
+          </button>
+        </div>
+        <label htmlFor="room-setup-agent-select">에이전트</label>
+        <select id="room-setup-agent-select" value={selectedUuid} onChange={(e) => setSelectedUuid(e.target.value)}>
+          <option value="">에이전트 선택</option>
+          {agents.map((a) => (
+            <option key={a.uuid} value={a.uuid}>
+              {a.meta.alias ?? a.owner.email} ({a.uuid})
+            </option>
+          ))}
+        </select>
+        <label htmlFor="room-setup-persona">페르소나(선택)</label>
+        <textarea
+          id="room-setup-persona"
+          value={persona}
+          onChange={(e) => setPersona(e.target.value)}
+          rows={3}
+          placeholder="이 에이전트가 토론에서 맡을 역할·관점"
+        />
+        <label htmlFor="room-setup-output-instruction">산출물 지시(선택)</label>
+        <input
+          id="room-setup-output-instruction"
+          value={outputInstruction}
+          onChange={(e) => setOutputInstruction(e.target.value)}
+          placeholder="예: 결론을 3줄로 정리해 마지막 발언으로 남겨라"
+        />
+        <p>
+          <button type="button" onClick={addParticipant}>
+            추가
+          </button>
+        </p>
 
-      <p>
-        <label>
-          사회자 지정(선택){" "}
-          <select value={moderatorUuid} onChange={(e) => setModeratorUuid(e.target.value)}>
-            <option value="">없음</option>
-            {participants.map((p) => (
-              <option key={p.agent_uuid} value={p.agent_uuid}>
-                {p.alias_snapshot ?? p.agent_uuid}
-              </option>
-            ))}
-          </select>
-        </label>
-      </p>
-      {moderatorUuid !== "" && (
-        <>
-          <label htmlFor="room-setup-moderator-text">사회자 지시문</label>
-          <textarea
-            id="room-setup-moderator-text"
-            style={{ width: "100%", maxWidth: "48rem" }}
-            value={moderatorText}
-            onChange={(e) => setModeratorText(e.target.value)}
-            rows={6}
-          />
-        </>
-      )}
+        <h2>사회자{room.moderator_required ? " — 이 토론방은 사회자 필수" : "(선택)"}</h2>
+        <label htmlFor="room-setup-moderator-select">참여자 중에서 지정</label>
+        <select
+          id="room-setup-moderator-select"
+          value={moderatorUuid}
+          onChange={(e) => setModeratorUuid(e.target.value)}
+        >
+          <option value="">없음</option>
+          {participants.map((p) => (
+            <option key={p.agent_uuid} value={p.agent_uuid}>
+              {p.alias_snapshot ?? p.agent_uuid}
+            </option>
+          ))}
+        </select>
+        {moderatorUuid !== "" && (
+          <>
+            <label htmlFor="room-setup-moderator-text">사회자 지시문</label>
+            <textarea
+              id="room-setup-moderator-text"
+              value={moderatorText}
+              onChange={(e) => setModeratorText(e.target.value)}
+              rows={6}
+            />
+          </>
+        )}
 
-      <p>
-        <button type="button" onClick={startRoom}>
-          시작
-        </button>
-        <button type="button" className="secondary" onClick={onBack}>
-          뒤로
-        </button>
-      </p>
+        <p>
+          <button type="button" onClick={startRoom}>
+            시작
+          </button>
+          <button type="button" className="secondary" onClick={onBack}>
+            뒤로
+          </button>
+        </p>
+      </div>
     </section>
   );
 }

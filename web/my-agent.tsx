@@ -28,7 +28,7 @@ export function MyAgentPage() {
     setCopied(false);
     const { data, error: fetchError } = await authClient.token();
     if (fetchError || data === null) {
-      setError("토큰 발급에 실패했다 — 로그인 상태를 확인할 것.");
+      setError("토큰 발급에 실패했습니다 — 로그인 상태를 확인하세요.");
       return;
     }
     setToken(data.token);
@@ -59,9 +59,9 @@ export function MyAgentPage() {
 
   return (
     <section>
-      <h1>내 에이전트</h1>
+      <h2>등록 토큰</h2>
       <p>
-        발급한 토큰을 에이전트 플러그인의 env <code>BROKER_TOKEN</code>에 넣을 것.
+        발급한 토큰을 에이전트 플러그인의 env <code>BROKER_TOKEN</code>에 넣으세요.
       </p>
       <button type="button" onClick={issueToken}>
         토큰 발급
@@ -70,30 +70,36 @@ export function MyAgentPage() {
       {token !== null && (
         <div>
           <label htmlFor="my-agent-token">발급된 토큰</label>
-          <textarea id="my-agent-token" readOnly value={token} rows={4} style={{ width: "100%" }} />
+          <textarea id="my-agent-token" readOnly value={token} rows={4} />
           <button type="button" className="secondary" onClick={copyToken}>
-            클립보드에 복사
+            {copied ? "복사됨" : "클립보드에 복사"}
           </button>
-          {copied && <span> 복사됨</span>}
         </div>
       )}
 
-      <h2>접속 중인 내 에이전트</h2>
+      <div className="list-head">
+        <h2>접속 중인 내 에이전트</h2>
+        <button type="button" className="secondary" onClick={reloadMyAgents}>
+          새로고침
+        </button>
+      </div>
       {listError !== null && <p role="alert">{listError}</p>}
-      <button type="button" className="secondary" onClick={reloadMyAgents}>
-        새로고침
-      </button>
       <table>
         <caption>접속 중인 내 에이전트</caption>
         <thead>
           <tr>
-            <th scope="col">alias</th>
-            <th scope="col">status</th>
-            <th scope="col">machine</th>
-            <th scope="col">uuid</th>
+            <th scope="col">별칭</th>
+            <th scope="col">상태</th>
+            <th scope="col">머신</th>
+            <th scope="col">UUID</th>
           </tr>
         </thead>
         <tbody>
+          {myAgents.length === 0 && (
+            <tr>
+              <td colSpan={4}>접속 중인 에이전트가 없습니다.</td>
+            </tr>
+          )}
           {myAgents.map((a) => (
             <tr key={a.uuid}>
               <td>{a.meta.alias ?? ""}</td>
